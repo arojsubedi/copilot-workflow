@@ -215,7 +215,8 @@ class InstallTests(unittest.TestCase):
         baseline.write_text(baseline.read_text(encoding="utf-8") + "\nBaseline fixture update.\n", encoding="utf-8")
         untouched = self.home / ".copilot/skills/jira-story/SKILL.md"
         untouched_bytes = untouched.read_bytes()
-        (source / "writing/examples/summary.md").write_text("USER-APPROVED example", encoding="utf-8")
+        example = source / "writing/examples/installation-fixture.md"
+        example.write_bytes(b"Illustrative installation fixture\n")
         self.assertEqual(self.install(source, check=True), 1)
         self.assertEqual(self.install(source), 0)
         installed = self.home / ".copilot/engineering-workflow/writing/style.md"
@@ -226,6 +227,8 @@ class InstallTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertTrue((self.home / relative).read_bytes().endswith(b"Baseline fixture update.\n"))
         self.assertEqual(untouched.read_bytes(), untouched_bytes)
+        installed_example = self.home / ".copilot/engineering-workflow/writing/examples" / example.name
+        self.assertEqual(installed_example.read_bytes(), example.read_bytes())
         self.assertEqual(self.install(source, check=True), 0)
 
     def test_removed_source_is_not_silently_left_active(self):

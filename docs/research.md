@@ -1,5 +1,52 @@
 # Research decisions
 
+## User writing calibration: 2026-09-11
+
+User-supplied engineering writing is the primary style evidence for this pass. Its recurring traits are connected explanation of behavior and consequence, precise identifiers, collaborative questions when context is incomplete, and detail proportional to the issue. Short findings remain direct; larger reviews and operational descriptions can need several paragraphs. The explicit punctuation preference is no em dash in user-voice prose. No external style research was needed.
+
+Replaced the generic PR, review, and Jira examples with unrelated fictional scenarios. `USER-CALIBRATED`, defined in `writing/style.md`, distinguishes these drafts from individually approved wording and generic illustrative examples. The samples informed cadence and organization only: company/project facts, identities, infrastructure, original technical scenarios, screenshots, and transcriptions were not retained. The fictional examples are not noun substitutions in the supplied text and their verification claims are not results from this repository.
+
+`code-comments.md` earns a conditional implementation read because meaningful embedded prose previously had no matching calibration. It shows caller semantics, an ordering constraint, and configuration documentation; it does not prescribe comments on ordinary code. `documentation.md` fills the absent standalone guide/design example and uses the existing output-kind mapping. Baseline, project profiles, PR/Jira procedures, and review procedure need no change. Review comments already reach their example through baseline's writing trigger and the review output kind. Required project formats still govern fields and structure.
+
+Shared style changes refine paragraph shape and evidence-dependent confidence rather than adding catchphrases. The plan's production/test sequence is preserved; punctuation is corrected, and its extra revision/negative fragments are consolidated to respect the existing two-positive/one-negative example policy. Explanation receives punctuation-only corrections; summary needs no change. Recognition of the user's voice remains a subjective review, and the documented probes are not live Copilot results.
+
+## Response readability refinement: 2026-09-11
+
+Keep presentation in `writing/style.md`. The recurring failures are buried conclusions, investigation transcripts, low-value side observations, and outcomes or verification gaps hidden in prose. Refine the existing guidance rather than add a competing style skill. Baseline's existing writing sentence now explicitly puts the requested answer/result first for brief replies that skip the style read. Task skills continue to own evidence, procedure, and artifact obligations; README needs no additional policy. These are design decisions, not measured improvements in Copilot behavior.
+
+### Mechanisms and decisions
+
+Inspected the current [i-have-adhd README](https://github.com/ayghri/i-have-adhd/blob/main/README.md), [skill and embedded rationale](https://github.com/ayghri/i-have-adhd/blob/main/skills/i-have-adhd/SKILL.md). Its README credits *The Adult ADHD Tool Kit*; this review evaluates response design, not its medical generalizations. The skill includes exceptions for depth, completeness, and host requirements, so its defaults are not represented here as unconditional bans.
+
+| Mechanism | Classification | Decision here |
+| --- | --- | --- |
+| Remove ceremony and expose completed behavior | ADOPT PRINCIPLE | Concrete answers and outcomes precede supporting detail. |
+| Action-led opening | ADAPT MECHANISM | Lead with the information requested: answer, recommendation, result, finding, or action. |
+| Numbered steps and grouped lists | ADAPT MECHANISM | Use structure that fits the content; retain all material items. |
+| Tangent suppression | ADAPT MECHANISM | Separate material secondary concerns; surface risks and blockers where they affect decisions. |
+| Factual errors | ADAPT MECHANISM | Expose symptom, location, consequence, and useful next step; qualify unproven causes. |
+| State reminders and next actions | ADAPT MECHANISM | Use only for meaningful continuity or needed action; a complete answer ends. |
+| Default duration estimates, five-item target, session mode | REJECT | No unsupported timing, numeric presentation budget, or toggle. |
+| Task-sensitive depth and uncertainty | ADOPT PRINCIPLE | Preserve reasoning and caveats needed to judge the answer. |
+
+### Comparison with current guidance
+
+| Source inspected | Classification | Application / boundary |
+| --- | --- | --- |
+| [GitHub skills versus instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills#skills-versus-custom-instructions) | ADOPT PRINCIPLE | Broad defaults and task-specific resources have different loading roles. Our existing baseline/style trigger already provides the needed boundary; another discovery entry adds no independent procedure. |
+| [Awesome Copilot steno-mode](https://github.com/github/awesome-copilot/blob/main/skills/steno-mode/SKILL.md) | ADOPT PRINCIPLE | Preserve exact commands, paths, identifiers, and error text; clarity takes priority over compression. The skill is still present at inspection. |
+| Same skill: shorthand, compression levels, persistent activation, token-reduction claim | REJECT | Normal English and selective detail suit these artifacts better. Do not import mode controls or treat an upstream percentage as evidence of local benefit. |
+| [Anthropic prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#control-the-format-of-responses) | ADAPT MECHANISM | Describe the desired output positively and make examples resemble it. Use relevant examples for format/tone; retain our small per-file example policy instead of importing example-count advice, XML wrappers, or model-specific verbosity settings. |
+| [OpenAI prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering#few-shot-learning) | ADAPT MECHANISM | Explicit output instructions and varied input/output examples support calibration. Add a grounded explanation, an uncertain diagnosis, and an implementation summary with a verification gap. Prompt advice is not proof that Copilot loads or follows these files. |
+
+`explanation.md` and `summary.md` fill observed calibration gaps in already-declared output kinds. Each stays within the existing example-size policy. Existing PR, Jira, review, and plan examples retain their artifact purposes and functional-first sequencing. No general prose rules are copied into task skills; optional visualization remains at its existing owner.
+
+### Provenance and validation boundary
+
+Checked the [i-have-adhd license](https://github.com/ayghri/i-have-adhd/blob/main/LICENSE) (MIT, copyright 2026 Ayoub Ghriss) and [Awesome Copilot license](https://github.com/github/awesome-copilot/blob/main/LICENSE) (MIT). Their notices require retaining copyright and permission notices in copies or substantial portions. This refinement uses independently written guidance and fictional examples; no upstream source, examples, scripts, hooks, dependencies, or packages are copied, vendored, installed, or executed. Links identify the upstream files inspected on the date above and may evolve; they are provenance, not runtime dependencies.
+
+Installer checks establish packaging and preservation, not readability or clinical effectiveness. The [response readability probes](verification.md#response-readability-probes) require live Copilot evaluation of answer visibility, evidence retention, depth, and artifact fit. Popularity and shorter outputs alone are not success measures.
+
 ## Planning refinement: 2026-09-10
 
 Reconstructed the current baseline, four existing skills, writing guidance/examples, installer/tests, and human documentation before this change. The decisions below are independent: planning earns one skill; ordinary tracing remains in baseline grounding; visualization remains optional writing presentation. No public prompt was executed or imported. These are design conclusions, not measured improvements in model behavior.

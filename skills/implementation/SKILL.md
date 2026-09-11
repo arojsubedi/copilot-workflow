@@ -33,6 +33,8 @@ Represent an important invariant in the existing type/schema/data model when pra
 
 Use comments for an invariant, surprising constraint, or rationale the code cannot express; document public semantics and non-obvious contracts where readers need them. Follow repository documentation requirements. Do not narrate ordinary statements or mechanically add docstrings. Update nearby documentation when behavior makes it stale.
 
+When authoring or substantially revising non-trivial comments, public/non-obvious docstrings, or embedded configuration documentation, read `{{WORKFLOW_ROOT}}/writing/style.md` and its `examples/code-comments.md` if present. Reuse current reads. Ordinary code edits and trivial comments do not trigger this calibration.
+
 ## Functional-first implementation
 
 Build the requested production functionality to a coherent state before reconciling test code with the completed intended behavior. This is the normal sequencing policy for meaningful features, including work without a phased plan. Test execution can provide feedback during construction; test maintenance normally waits until the functionality is coherent enough to exercise across its affected production paths. Final coverage and verification remain required; TDD is not mandatory.

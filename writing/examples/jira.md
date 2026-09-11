@@ -1,12 +1,17 @@
 # Jira example
 
-ILLUSTRATIVE: this is not an approved sample of the user's voice. These criteria represent a fictional confirmed requirement; they do not authorize additional behavior in another story.
+USER-CALIBRATED. The scenario and requirements are fictional. A project's required fields and acceptance-criteria format still apply.
 
-Title: Keep report filters when returning from a detail page
+Title: Remind readers before a book reservation expires
 
-Opening a report detail page and returning to the list clears the selected filters. Preserve the filters for this navigation so the user can continue reviewing the same results.
+Readers currently receive a message when a reserved book is ready for collection, but there is no reminder before the reservation expires. Someone who misses the first message may not realize that the book is still waiting for them.
 
-Acceptance criteria:
+The reservation page already shows the collection deadline and whether the book has been collected. Extend the notification behavior to send one reminder on the day before that deadline, using the reader's existing notification preference.
 
-- Returning from a detail page restores the filters selected before opening it.
-- The restored list uses those filters when loading results.
+Only active, uncollected reservations should receive a reminder. Cancelled reservations and books that have already been collected should be excluded, while the current ready-for-collection message remains unchanged.
+
+Acceptance criteria for this fictional project's format:
+
+- An active, uncollected reservation receives one reminder on the day before its collection deadline.
+- The reminder uses the reader's current notification preference.
+- Collected and cancelled reservations receive no reminder; the existing ready-for-collection message is unchanged.

@@ -115,13 +115,41 @@ These are **documented behavioral scenarios, not executed Copilot tests**. In di
 | G — diagnostic feedback blocked | Stale test wiring prevents exercising a consequential preserved contract during construction. Make the minimal wiring repair needed to restore that diagnostic, then continue functional work; this does not trigger broad test cleanup. |
 | H — ambiguous failure cause | A test fails during an intentional change, but its expectation may encode a preserved contract. Inspect the contract and production path before classifying the failure; retain the assertion and fix production if it exposes a real regression. An unknown cause is not evidence of stale tests. |
 
+## Response readability probes
+
+These are **documented scenarios, not executed Copilot evaluations**. In disposable sessions, record the surface/model, actual style/example reads, supplied evidence, and response. First inspect only the opening, headings, emphasis, and relevant literals; then read the full answer to check that accuracy and necessary depth survived. Judge information placement and completeness, not token counts or exact phrases.
+
+| Scenario / stimulus | Observable expected behavior |
+| --- | --- |
+| A — repository question | Ask why a field is null. The supported cause leads, followed by useful file/symbol evidence and the relevant flow. If the cause is unknown, the opening says what is established and what remains uncertain. No investigation transcript before the answer. |
+| B — implementation result | Supply successful focused checks and an unavailable required integration check. Changed behavior appears first; actual results and the outstanding gate are easy to locate. The answer does not claim completion or hide the gap behind a general success statement. |
+| C — secondary concern | During a targeted fix, provide unrelated naming cleanup and a separately evidenced data-loss risk. Omit the naming tangent; state the risk and consequence clearly, placing it up front if it changes the decision. No unsolicited repository audit or automatic follow-up work. |
+| D — requested depth | Ask for a detailed architectural explanation with alternatives. The recommendation leads, then structured reasoning, evidence, and consequential tradeoffs. The answer remains complete without repeated background or artificial length limits. |
+| E — eight real review findings | Supply eight material defects with triggers and evidence. Retain all eight, ranked or grouped so the most consequential are visible first. Do not hide findings behind a five-item target or dilute them with cosmetic suggestions. |
+| F — brief answer and active state | Compare a standalone factual question with a multi-phase task resuming after an interruption. The brief answer leads directly without loading every example or adding a next task. State the current phase only when it helps continuity; do not fabricate timings or repeat a full checklist. |
+| G — artifact boundaries | Draft a PR or Jira story using its required template. Preserve all required fields, verification limits, and acceptance criteria; do not inject conversational progress/next-action labels. Explanation/summary examples do not replace the matching artifact example. |
+| H — actionable error | Provide a command failure and an unconfirmed cause. Preserve the exact command/error and location, explain its effect, and identify the useful diagnostic. No false diagnosis, shorthand identifiers, dramatic opener, or closing offer. |
+
+## User-voice calibration probes
+
+These are documented probes, not executed Copilot evaluations. Use unrelated fictional fixtures, inspect the actual example reads and output, and ask the user whether the prose sounds natural. All generated user-voice prose should avoid U+2014; calibrated examples must not be described as individually approved.
+
+| Scenario | Expected behavior |
+| --- | --- |
+| Simple and complex review | A verified local defect gets a short, direct comment. A subtle path with an unresolved assumption gets connected observation, scenario, consequence, and a grounded question. Neither becomes a label checklist or a repeated set of hedging phrases. |
+| Contained and substantial PR | The contained change stays brief. The larger change explains current behavior, ownership, scope, and actual verification in paragraphs, using lists only for parallel responsibilities or checks. Required project sections remain intact. |
+| Jira narrative | Explain why the change is needed, what exists, and what should happen. Keep architecture choices out unless required, and follow the project's acceptance-criteria format without invented benefits. |
+| Comments and docstrings | For an ordering invariant, explain why the order matters and what breaks if changed. For non-obvious caller semantics, document the contract. Read style/comment calibration only for meaningful embedded prose; a variable rename or trivial comment does not load it or gain syntax narration. |
+| Standalone documentation | Read the documentation example for a component guide or design note. Explain behavior, constraints, and extension points where needed; do not turn a simple note into a fixed section template. |
+| Privacy and punctuation | Generate across the output kinds and check for em dashes, copied source phrasing, or transferred sample identities, architecture, and test claims. Read the result for confidence that matches evidence, not mandatory uncertainty phrases. |
+
 ## Change the owning layer
 
 For an instruction/skill change, choose representative scenarios above and inspect actual decisions, code, commands, and review effort. Compare against the same task and initial state when benefit is uncertain. A model reciting rules or an exact-word assertion in a unit test proves little about engineering behavior.
 
 For skills, check frontmatter name/description, trigger boundaries, rendered support paths, relative neighboring references, expected output, and mutation scope. In particular, `prepare-pr` should reuse valid evidence and pass its pinned comparison to a bounded reassessment in review-only mode when needed. Tiny implementation bypasses the skill but retains baseline verification. Verification may happen during implementation or review; diagram arrows do not require running the same check twice. No documentation-only change needs a suite of new model-rule string tests.
 
-For profiles, verify live identity and metadata only after replacing examples. For writing, add small sanitized USER-APPROVED examples without importing project facts. For installer changes, test temporary installation and upgrade/recovery as well as clean generation. For surface assumptions, recheck primary documentation and live diagnostics on that surface.
+For profiles, verify live identity and metadata only after replacing examples. For writing, keep examples small and sanitized, using the style file's marker for their actual approval/calibration status. For installer changes, test temporary installation and upgrade/recovery as well as clean generation. For surface assumptions, recheck primary documentation and live diagnostics on that surface.
 
 During the initial 2026-09-09 portability refinement, the old manifest bug was reproduced against the original installer, and the old-to-new upgrade and explicit cleanup were checked.
 

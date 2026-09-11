@@ -33,13 +33,23 @@ Represent an important invariant in the existing type/schema/data model when pra
 
 Use comments for an invariant, surprising constraint, or rationale the code cannot express; document public semantics and non-obvious contracts where readers need them. Follow repository documentation requirements. Do not narrate ordinary statements or mechanically add docstrings. Update nearby documentation when behavior makes it stale.
 
-## Keep construction and evidence together
+## Functional-first implementation
 
-Introduce observable behavior in coherent increments and add or adjust proportionate checks as it appears. Use existing meaningful test boundaries; do not distort production interfaces to make mocking easier. Derive expected outcomes from the requirement or an independent example. Inspect the repository's actual check commands and side effects before running them.
+Build the requested production functionality to a coherent state before reconciling test code with the completed intended behavior. This is the normal sequencing policy for meaningful features, including work without a phased plan. Test execution can provide feedback during construction; test maintenance normally waits until the functionality is coherent enough to exercise across its affected production paths. Final coverage and verification remain required; TDD is not mandatory.
 
-Run focused checks soon enough to catch a broken assumption before more code depends on it. Run broader required gates when the affected boundaries warrant them; reuse still-valid results. Neither mandatory TDD nor running everything after every edit is required.
+During functional construction:
 
-Remove directly obsolete paths when safe and within scope; leave unrelated cleanup separate. Once a meaningful pass delivers its intended behavior, inspect its diff with `implementation-review`, adjust within the authorized scope, and continue only if work remains. Carry forward actual checks and unresolved gaps, not a claim that following this procedure proves correctness.
+- Prioritize production behavior in coherent increments and preserve real contracts. Remove directly obsolete production paths within scope; keep unrelated cleanup separate. Do not distort interfaces or retain obsolete production structure to satisfy mocks or tests.
+- Inspect actual check commands and side effects before running them. Use existing tests or type, build, runtime, smoke, API, or UI checks diagnostically when they can expose a bad assumption before more code depends on it. Investigate failures against intended behavior and preserved contracts; fix genuine production defects or blocking integration failures when discovered. Do not assume a failure is stale merely because behavior is evolving.
+- Defer repairs to stale assertions, mocks, fixtures, test data, and wiring caused by intentional changes, and defer final behavioral/regression coverage while that behavior is still changing. Recognize expected fallout and note it in the current plan if material; do not rewrite tests for each intermediate state or repeatedly interrupt functional phases to keep the suite green. If stale test plumbing blocks meaningful diagnostic progress, make only the repair needed to regain that feedback.
+
+Once the functional implementation is coherent, complete a dedicated test/verification phase (a direct step suffices for a contained change):
+
+- Inspect affected tests and reconcile stale mocks, fixtures, test data, and wiring. Update or remove assertions only where behavior legitimately changed; retain assertions for preserved contracts. Never weaken assertions just to obtain green output.
+- Add missing meaningful behavioral/regression coverage at existing useful test boundaries. Derive expected outcomes from requirements or independent examples, including relevant edge/failure cases, rather than mirroring the implementation.
+- Run focused tests and broader required repository gates; inspect results and distinguish stale test assumptions from implementation defects. Fix genuine production bugs revealed by verification and recheck affected behavior. Reuse still-valid results rather than duplicating runs.
+
+Use `implementation-review` after meaningful passes, with the current phase clear; it can run during functional construction. After test reconciliation and verification, review the completed implementation, adjust within authorized scope, and recheck affected behavior. Deferred maintenance must be resolved before completion: missing meaningful coverage, unresolved broken tests, or required checks still due remain gaps, not a completed feature. Carry forward actual results and unavailable verification honestly; following this procedure is not proof of correctness.
 
 ## Mutation boundary
 

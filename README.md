@@ -29,6 +29,8 @@ This describes how context contributes, not a precedence ladder. Instructions gu
 
 Normal questions use baseline grounding: trace only evidence that can change the answer, cite useful locations, and answer first. There is no separate tracing or visualization skill in V1. Diagrams and tables present inspected facts when useful; simple answers remain prose. Meaningful implementation uses construction guidance, then bounded self-review, adjustment and verification. Tiny edits need focused checks. [DESIGN.md](DESIGN.md) shows the complete operating model.
 
+**Functional-first implementation:** construct meaningful features to a coherent production state, then reconcile affected tests and add meaningful coverage in a final test/verification phase. Existing checks may run diagnostically during construction, and genuine defects still need correction when discovered. Final verification and review remain required. [Construction procedure](skills/implementation/SKILL.md#functional-first-implementation)
+
 ## Install and configure
 
 Python 3.12+ is the only installer dependency. From this private clone:

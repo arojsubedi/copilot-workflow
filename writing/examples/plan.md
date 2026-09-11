@@ -69,7 +69,7 @@ This removes duplicate transition ownership without adding another abstraction.
 
 Extend `CaseEventProcessor.apply_transition` to support the transition cases currently accepted through `CaseService.update_status`.
 
-Preserve existing domain validation and distinguish invalid transitions from stale-state conflicts. Extend the event-transition tests for the API-required cases before moving the API path.
+Preserve existing domain validation and distinguish invalid transitions from stale-state conflicts. Use existing transition checks diagnostically if needed to test that assumption before routing the API path; correct production contract violations when found.
 
 ### Phase 2 — Route API updates through the shared owner
 
@@ -77,15 +77,17 @@ Update `CaseService.update_status` to delegate domain transition decisions throu
 
 Keep API request validation and boundary-specific error mapping in the service layer. Remove the duplicated service transition logic once no caller depends on it.
 
-### Phase 3 — Reconcile dependent callers and tests
+### Phase 3 — Complete dependent production paths
 
-Update callers, fixtures, and mocks that currently assume `CaseService` writes status directly.
+Update production callers that depend on `CaseService` writing status directly.
 
 Preserve background reconciliation behavior. Existing reconciliation callers should continue through the event path without new compatibility branches or forwarding wrappers.
 
-Update API behavioral tests to cover the same successful and rejected transitions exposed today.
+Remove only transition code made obsolete by the shared path; keep unrelated case-status cleanup outside this change. The API and reconciliation paths should now be coherent enough to exercise together.
 
-### Phase 4 — Integration verification and bounded cleanup
+### Phase 4 — Reconcile tests and verify the feature
+
+Repair affected fixtures, mocks, test data, and wiring that assume direct service writes. Preserve assertions for the unchanged API and reconciliation contracts; update stale internal assumptions. Add behavioral/regression coverage for the API-required transitions through the shared owner and meaningful failure cases.
 
 Run the existing case-service, event-processor, repository, API, type, and lint checks required by the repository.
 
@@ -98,10 +100,10 @@ Exercise:
 
 Confirm that both API and reconciliation persist through `CaseRepository.transition` while retaining their existing boundary-specific error behavior.
 
-Remove only transition code made obsolete by the shared path; keep unrelated case-status cleanup outside this change.
+Distinguish stale test assumptions from real production failures, fix defects, and recheck affected behavior. These are planned checks, not passing results.
 ```
 
-The phases follow real dependency and ownership boundaries: establish the common behavior, migrate the API path, reconcile dependents, then verify the integrated result. They are not arbitrary backend/frontend/test buckets.
+The functional phases follow real dependency and ownership boundaries: establish the common behavior, migrate the API path, and complete dependents. Diagnostic checks may guide construction; test maintenance and new coverage belong in the final verification phase once production behavior is coherent.
 
 ## Positive — revision converges in place
 

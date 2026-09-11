@@ -69,7 +69,9 @@ Keep top-level phases to five or fewer in normal planning. If a proposal appears
 
 Do not mechanically divide work into backend, frontend, and tests unless those are the real dependency boundaries.
 
-Each phase or direct step should convey its objective, owning areas or important symbols, concrete behavior, meaningful dependencies/order, and observable verification. Include concise substeps only when they clarify a phase.
+Each phase or direct step should convey its objective, owning areas or important symbols, concrete behavior, meaningful dependencies/order, and observable outcome. Include concise substeps only when they clarify a phase.
+
+Use functional-first sequencing for meaningful features: normally place functional production phases before a final test/verification phase, within the existing phase budget. Concentrate affected test repair, mocks/fixtures/wiring updates, new behavioral/regression coverage, and focused/broader repository checks in that final phase once functionality is coherent enough to exercise. Do not distribute test maintenance across functional phases merely to keep an intermediate suite green. Earlier phases may name diagnostic checks that expose wrong assumptions, preserved-contract violations, or blocking integration failures; real production defects need correction when discovered. [Implementation](../implementation/SKILL.md#functional-first-implementation) owns this distinction between diagnostic execution and deferred test maintenance.
 
 Do not force a universal contract-first, backend-first, frontend-first, or test-first sequence. Follow the actual dependency graph of the change.
 

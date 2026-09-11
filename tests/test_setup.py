@@ -101,7 +101,7 @@ class InstallTests(unittest.TestCase):
 
     def test_new_planning_files_upgrade_an_existing_install(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         additions = {
             "skills/planning/SKILL.md": ".copilot/skills/planning/SKILL.md",
             "writing/examples/plan.md": ".copilot/engineering-workflow/writing/examples/plan.md",
@@ -129,7 +129,7 @@ class InstallTests(unittest.TestCase):
 
     def test_profile_update_and_fourth_project_propagate_from_source(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         self.install(source)
         profile = source / "projects/project-a.md"
         profile.write_bytes(b"Configuration status: READY\nVerified fixture identity\n")
@@ -205,7 +205,7 @@ class InstallTests(unittest.TestCase):
 
     def test_canonical_update_and_new_example_are_installed(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         self.install(source)
         style = source / "writing/style.md"
         style.write_text(style.read_text(encoding="utf-8") + "\nPrefer concrete verbs.\n", encoding="utf-8")
@@ -230,7 +230,7 @@ class InstallTests(unittest.TestCase):
 
     def test_removed_source_is_not_silently_left_active(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         self.install(source)
         (source / "skills/jira-story/SKILL.md").unlink()
         with self.assertRaisesRegex(ValueError, "removed from source"):
@@ -266,7 +266,7 @@ class InstallTests(unittest.TestCase):
 
     def test_source_newlines_and_bom_produce_identical_utf8_lf(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         self.install(source)
         before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
         for path in source.rglob("*.md"):
@@ -332,7 +332,7 @@ class InstallTests(unittest.TestCase):
 
     def test_markdown_extension_selection_is_case_sensitive_on_every_os(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         (source / "writing/examples/not-selected.MD").write_text("human notes", encoding="utf-8")
         self.install(source)
         self.assertFalse((self.home / ".copilot/engineering-workflow/writing/examples/not-selected.MD").exists())
@@ -348,7 +348,7 @@ class InstallTests(unittest.TestCase):
 
     def test_interrupted_update_can_be_checked_and_rerun(self):
         source = self.root / "private clone"
-        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copytree(SOURCE, source, ignore=shutil.ignore_patterns(".git", "__pycache__"))
         self.install(source)
         baseline = source / "instructions/baseline.md"
         baseline.write_bytes(baseline.read_bytes() + b"\nNew source instruction.\n")

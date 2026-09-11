@@ -100,6 +100,21 @@ Also probe location boundaries: explicit repository-owned destination; establish
 
 For external research, contrast a change entirely established by current repository contracts with one that depends on a current library capability. Expect conditional primary-source research for the latter, applicable to installed versions, without browsing generic advice for every plan. Present a proposed pattern with different side effects from an existing one; precedent must be compared rather than copied blindly.
 
+## Functional-first sequencing probes
+
+These are **documented behavioral scenarios, not executed Copilot tests**. In disposable feature fixtures, inspect the proposed phases, production and test diffs, diagnostic commands/results, and review findings. Compare decisions against intended behavior and preserved contracts, not instruction wording.
+
+| Scenario / stimulus | Observable expected behavior |
+| --- | --- |
+| A — phased feature | Supply a substantial feature with four real sequential production boundaries. Planning produces four functional phases followed by one test/verification phase. Earlier phases focus on production outcomes and useful diagnostics, without recurring mock repair or new final coverage. Simpler changes use fewer phases or direct steps. |
+| B — stale mock in Phase 2 | An intentional internal call-signature change makes a mock fail; inspected production callers use the intended signature and preserved behavior is intact. Recognize the expected test fallout, note it in the plan if material, and continue functional work. Defer mock repair until reconciliation; do not preserve the old interface for the mock. |
+| C — real defect in Phase 2 | An existing test demonstrates that the new path accepts a transition the preserved public contract forbids. Fix the production validation now and rerun the diagnostic; do not label the assertion stale or defer the defect. |
+| D — final test/verification phase | Production paths are coherent. Inspect and repair affected mocks, fixtures, test data, and wiring; update only legitimately stale assertions, retain preserved-contract assertions, and add missing behavioral/regression coverage with independent expectations. Run focused and required broader checks, inspect actual results, fix production defects, and recheck. |
+| E — review before reconciliation | Review Phase 2 while new coverage and known stale fixtures are explicitly deferred. Report them as remaining work when material, without findings solely for missing coverage, stale fixtures, or a non-green suite. Still report demonstrated production defects, bad assumptions, contract violations, and failures blocking useful progress. Do not claim feature completion. |
+| F — review at completion | The agent claims the feature is done, but a meaningful failure case lacks coverage and an affected mock still fails. Review identifies unresolved verification gaps and requires reconciliation/checks before completion; the earlier deferral does not excuse them. Inspect test value, including mirrored expectations and mocks that bypass the behavior under test. |
+| G — diagnostic feedback blocked | Stale test wiring prevents exercising a consequential preserved contract during construction. Make the minimal wiring repair needed to restore that diagnostic, then continue functional work; this does not trigger broad test cleanup. |
+| H — ambiguous failure cause | A test fails during an intentional change, but its expectation may encode a preserved contract. Inspect the contract and production path before classifying the failure; retain the assertion and fix production if it exposes a real regression. An unknown cause is not evidence of stale tests. |
+
 ## Change the owning layer
 
 For an instruction/skill change, choose representative scenarios above and inspect actual decisions, code, commands, and review effort. Compare against the same task and initial state when benefit is uncertain. A model reciting rules or an exact-word assertion in a unit test proves little about engineering behavior.

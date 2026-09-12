@@ -58,6 +58,8 @@ def read_routing(text):
 def project_files(source):
     """Generate compact routing from READY local profiles; never write source."""
     projects = safe_target(source.resolve(), "projects")
+    template = safe_target(source.resolve(), "projects/project.example.md").read_text(encoding="utf-8-sig")
+    placeholders = set(re.findall(r"<[A-Za-z][A-Za-z0-9_-]*>", template))
     destination = ".copilot/engineering-workflow/projects/"
     files, rows, identities = {}, [], {}
     for path in sorted(projects.iterdir()):
@@ -75,9 +77,8 @@ def project_files(source):
             if statuses[0] == "UNCONFIGURED":
                 print("Skipping UNCONFIGURED profile: " + path.name)
                 continue
-            # Title-format tokens are conventions, not unfinished identity fields.
-            placeholders = set(re.findall(r"<([A-Za-z][A-Za-z0-9_-]*)>", text)) - {"JIRA-KEY", "JIRA-SUMMARY", "SUMMARY"}
-            if placeholders or re.search(r"\bexample\.(com|org|net)\b|\.invalid\b", text, re.IGNORECASE):
+            if (any(token in text for token in placeholders)
+                    or re.search(r"\bexample\.(com|org|net)\b|\.invalid\b", text, re.IGNORECASE)):
                 raise ValueError("READY profile contains template placeholders; replace them or mark UNCONFIGURED")
             routing = read_routing(text)
             aliases = [alias.strip() for alias in routing["Aliases"].split(",")]
@@ -218,7 +219,7 @@ def install(source, home, check=False):
 
     Conflicts raise before mutation. Exact expected bytes can be adopted even
     without a manifest. Otherwise only bytes matching the last recorded digest
-    may be replaced. Removed sources need explicit cleanup, never auto-deletion.
+    may be replaced or removed when no longer desired.
     """
     home = home.expanduser().resolve()
     files = build_files(source, home)
@@ -248,11 +249,18 @@ def install(source, home, check=False):
         outdated.append(relative)
         if actual is not None and digest(actual) != previous.get(relative):
             conflicts.append(str(target) + " has existing or locally edited content")
-    removed = set(previous) - set(files)
-    if removed:
-        conflicts.append("Previously installed files removed from source; review and remove "
-                         "them locally, then remove their manifest entries: "
-                         + ", ".join(sorted(removed)))
+    stale = sorted(set(previous) - set(files))
+    removable = []
+    for relative in stale:
+        target = safe_target(home, relative)
+        if not target.exists():
+            continue
+        if not target.is_file():
+            conflicts.append(str(target) + " is not a file")
+        elif digest(target.read_bytes()) != previous[relative]:
+            conflicts.append(str(target) + " is stale and no longer matches the last owned hash")
+        else:
+            removable.append(relative)
     if conflicts:
         raise ValueError("No files changed.\n" + "\n".join(conflicts)
                          + "\nMerge wanted content into the source first. "
@@ -260,16 +268,24 @@ def install(source, home, check=False):
     if check:
         if outdated or manifest_outdated:
             print("Installation differs from source: "
-                  + ", ".join(outdated + (["manifest"] if manifest_outdated else [])))
+                  + ", ".join(outdated + ["stale: " + p for p in stale]
+                              + (["manifest"] if manifest_outdated else [])))
             return 1
         print("Installed files match the source. App UI settings are not inspectable by setup.")
         return 0
 
-    for relative in outdated:
-        write_atomic(safe_target(home, relative), files[relative])
+    for relative in removable:
+        safe_target(home, relative).unlink()
+    changed = 0
+    for relative, data in files.items():
+        target = safe_target(home, relative)
+        # A case-only rename can share the stale file's path on Windows/macOS.
+        if relative in outdated or not target.exists():
+            write_atomic(target, data)
+            changed += 1
     if manifest_outdated:
         write_atomic(manifest, manifest_bytes)
-    print(f"Installed {len(outdated)} changed files under {home / '.copilot'}.")
+    print(f"Installed {changed} changed files and removed {len(removable)} stale files under {home / '.copilot'}.")
     print("App: paste " + str(home / ".copilot/copilot-instructions.md")
           + " into Settings > Sessions > App instructions.")
     print("VS Code: verify engineering-workflow in Instructions and all workflow skills in Skills.")

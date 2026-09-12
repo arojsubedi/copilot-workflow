@@ -12,7 +12,7 @@ python -m unittest discover -s tests -v
 
 The suite uses temporary source copies, homes, and Git repositories. It checks generated routing, READY/UNCONFIGURED behavior, template exclusion, routing ambiguity, malformed profiles, filename portability, ignored configuration, template updates, installed drift and ownership, unrelated-file preservation, current removal/rename recovery, atomic replacement, interrupted writes, UTF-8/newlines, and CLI exit codes. It also checks local Markdown links and skill metadata/layout. A symlink test may skip when the account lacks privileges.
 
-For an installer change, run on Windows and macOS: simulated path checks do not certify native filesystem behavior. Inspect a fresh temporary install and `--check`; configure one and several profiles, edit routing, and confirm the generated index matches. Exercise current-source removal and conflict recovery from [setup](setup.md#update-and-recover). Never use the real default home merely to test installation.
+Repository [CI](../.github/workflows/tests.yml) runs this command with Python 3.12 natively on Windows, macOS, and Linux; simulated path checks alone do not certify native filesystem behavior. Inspect a fresh temporary install and `--check`; configure one and several profiles, edit routing, and confirm the generated index matches. Exercise current-source removal and conflict recovery from [setup](setup.md#update-and-recover). Never use the real default home merely to test installation.
 
 ## Copilot loading and project selection
 

@@ -178,6 +178,32 @@ class InstallTests(unittest.TestCase):
             index = self.home / ".copilot/engineering-workflow/projects/index.md"
             self.assertIn(root.replace("\\", "\\\\"), index.read_text())
 
+    def test_ready_profiles_reject_exact_template_placeholders(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        original = profile.read_text(encoding="utf-8")
+        template = self.source / "projects/project.example.md"
+        template.write_bytes(template.read_bytes() + b"\nPrivate field: <NEW-TEMPLATE-FIELD>\n")
+        for token in ("<PROJECT-NAME>", "<github-mcp-connection>", "<JIRA-HOST>", "<NEW-TEMPLATE-FIELD>"):
+            profile.write_text(original + "\n" + token + "\n", encoding="utf-8")
+            for check in (False, True):
+                with self.subTest(token=token, check=check):
+                    with self.assertRaisesRegex(ValueError, "template placeholders"):
+                        self.install(check=check)
+                    self.assertFalse(self.home.exists())
+
+    def test_ready_profiles_allow_free_markdown_and_convention_tokens(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        prose = ("\n## Conventions\n\n<details>\n<summary>Title format</summary>\n\n"
+                 "Use `[<JIRA-KEY>] <JIRA-SUMMARY>` or `<SUMMARY>`.\n\n"
+                 "Literal documentation token: `<service-name>`.\n</details>\n")
+        profile.write_text(profile.read_text(encoding="utf-8") + prose, encoding="utf-8")
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        installed = self.home / ".copilot/engineering-workflow/projects/sre-api.md"
+        self.assertEqual(installed.read_text(encoding="utf-8"), profile.read_text(encoding="utf-8"))
+
     def test_unreadable_profiles_and_linked_sources_fail(self):
         self.configure(["sre-api.md"])
         profile = self.source / "projects/sre-api.md"
@@ -206,32 +232,119 @@ class InstallTests(unittest.TestCase):
             renamed.rename(profile)
         self.assertFalse(self.home.exists())
 
-    def test_profile_rename_and_disable_require_explicit_owned_cleanup(self):
+    def test_profile_rename_and_disable_clean_up_unchanged_owned_files(self):
         self.configure(["sre-api.md"])
         self.install()
         installed = self.home / ".copilot/engineering-workflow/projects"
-        (installed / "sre-api.md").write_bytes(b"Installed edit to preserve")
         neighbor = installed / "unowned.md"
         neighbor.write_bytes(b"Unowned neighbor")
-        profile = (self.source / "projects/sre-api.md").rename(self.source / "projects/api.md")
-        for name in ("sre-api.md", "api.md"):
+        profile = self.source / "projects/sre-api.md"
+        for next_name in ("api.md", "API.md", None):
+            old_name = profile.name
+            if next_name:
+                profile = profile.rename(profile.with_name(next_name))
+            else:
+                profile.write_text(profile.read_text(encoding="utf-8").replace(
+                    "status: READY", "status: UNCONFIGURED"), encoding="utf-8")
             before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
-            for check in (True, False):
-                with self.assertRaisesRegex(ValueError, "removed from source"):
-                    self.install(check=check)
-                self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
-            (installed / name).unlink()
-            with self.assertRaisesRegex(ValueError, "removed from source"):
-                self.install()
-            manifest = installed.parent / "install-manifest.json"
-            entries = json.loads(manifest.read_text(encoding="utf-8"))
-            del entries[".copilot/engineering-workflow/projects/" + name]
-            manifest.write_text(json.dumps(entries), encoding="utf-8")
+            with patch.object(SETUP, "write_atomic", side_effect=AssertionError("check wrote")), \
+                    patch.object(Path, "unlink", side_effect=AssertionError("check deleted")):
+                self.assertEqual(self.install(check=True), 1)
+            self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
             self.assertEqual(self.install(), 0)
             self.assertEqual(self.install(check=True), 0)
             self.assertEqual(neighbor.read_bytes(), b"Unowned neighbor")
-            profile.write_text(profile.read_text(encoding="utf-8").replace("status: READY", "status: UNCONFIGURED"), encoding="utf-8")
-        self.assertEqual({p.name for p in installed.iterdir()}, {"index.md", "unowned.md"})
+            entries = json.loads((installed.parent / "install-manifest.json").read_text(encoding="utf-8"))
+            self.assertNotIn(".copilot/engineering-workflow/projects/" + old_name, entries)
+            expected = {"index.md", "unowned.md"}
+            index = (installed / "index.md").read_text(encoding="utf-8")
+            self.assertNotIn(old_name, index)
+            if next_name:
+                expected.add(next_name)
+                self.assertIn(".copilot/engineering-workflow/projects/" + next_name, entries)
+                self.assertIn("| " + next_name + " | service0, project0 |", index)
+                self.assertEqual((installed / next_name).read_bytes(), profile.read_bytes())
+            else:
+                self.assertIn("Configuration status: UNCONFIGURED", index)
+            self.assertEqual({p.name for p in installed.iterdir()}, expected)
+
+    def test_absent_stale_target_only_needs_manifest_cleanup(self):
+        self.configure(["sre-api.md"])
+        self.install()
+        relative = ".copilot/engineering-workflow/projects/sre-api.md"
+        (self.source / "projects/sre-api.md").unlink()
+        (self.home / relative).unlink()
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        self.assertEqual(self.install(check=True), 1)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+        self.assertEqual(self.install(), 0)
+        manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
+        self.assertNotIn(relative, json.loads(manifest.read_text(encoding="utf-8")))
+        self.assertEqual(self.install(check=True), 0)
+
+    def test_stale_and_ordinary_conflicts_block_all_mutation(self):
+        self.configure(["a.md", "z.md"])
+        self.install()
+        for name in ("a.md", "z.md"):
+            (self.source / "projects" / name).unlink()
+        installed = self.home / ".copilot/engineering-workflow/projects"
+        for target, message in ((installed / "z.md", "stale and no longer matches the last owned hash"),
+                                (installed / "index.md", "locally edited")):
+            original = target.read_bytes()
+            target.write_bytes(b"Preserve this local edit")
+            before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+            for check in (True, False):
+                with self.subTest(target=target.name, check=check):
+                    with self.assertRaisesRegex(ValueError, message) as error:
+                        self.install(check=check)
+                    self.assertIn("Back up and remove conflicting installed files", str(error.exception))
+                    self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+            target.write_bytes(original)
+        self.assertEqual(self.install(), 0)
+        self.assertEqual({p.name for p in installed.iterdir()}, {"index.md"})
+        self.assertEqual(self.install(check=True), 0)
+
+    def test_stale_paths_reject_directories_and_links_before_mutation(self):
+        self.configure(["a.md", "z.md"])
+        self.install()
+        for name in ("a.md", "z.md"):
+            (self.source / "projects" / name).unlink()
+        target = self.home / ".copilot/engineering-workflow/projects/z.md"
+        target.unlink()
+        target.mkdir()
+        for check in (False, True):
+            with self.assertRaisesRegex(ValueError, "is not a file"):
+                self.install(check=check)
+            self.assertTrue(target.is_dir())
+            self.assertTrue(target.with_name("a.md").is_file())
+        with patch.object(Path, "is_junction", autospec=True, side_effect=lambda path: path == target):
+            for check in (False, True):
+                with self.assertRaisesRegex(ValueError, "linked install path"):
+                    self.install(check=check)
+                self.assertTrue(target.with_name("a.md").is_file())
+
+    def test_interrupted_stale_cleanup_keeps_ownership_for_retry(self):
+        self.configure(["sre-api.md"])
+        self.install()
+        target = self.home / ".copilot/engineering-workflow/projects/sre-api.md"
+        manifest = target.parent.parent / "install-manifest.json"
+        before = manifest.read_bytes()
+        (self.source / "projects/sre-api.md").unlink()
+        real_write = SETUP.write_atomic
+
+        def interrupt(path, data):
+            if path == manifest:
+                raise OSError("interrupted manifest update")
+            real_write(path, data)
+
+        with patch.object(SETUP, "write_atomic", side_effect=interrupt):
+            with self.assertRaisesRegex(OSError, "interrupted manifest update"):
+                self.install()
+        self.assertFalse(target.exists())
+        self.assertEqual(manifest.read_bytes(), before)
+        self.assertEqual(self.install(check=True), 1)
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
 
     def test_invalid_profile_cli_error_is_actionable_and_read_only(self):
         self.configure(["sre-api.md"])
@@ -406,13 +519,28 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(installed_example.read_bytes(), example.read_bytes())
         self.assertEqual(self.install(source, check=True), 0)
 
-    def test_removed_source_is_not_silently_left_active(self):
-        source = self.root / "private clone"
-        copy_source(source)
-        self.install(source)
-        (source / "skills/jira-story/SKILL.md").unlink()
-        with self.assertRaisesRegex(ValueError, "removed from source"):
-            self.install(source)
+    def test_removed_skills_and_writing_follow_manifest_ownership(self):
+        self.install()
+        paths = {"skills/jira-story/SKILL.md": ".copilot/skills/jira-story/SKILL.md",
+                 "writing/examples/pr.md": ".copilot/engineering-workflow/writing/examples/pr.md"}
+        for source, installed in paths.items():
+            (self.source / source).unlink()
+        # Even a formerly generated path is unowned once omitted from the manifest.
+        manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
+        unowned = ".copilot/engineering-workflow/writing/examples/jira.md"
+        original = (self.home / unowned).read_bytes()
+        (self.source / "writing/examples/jira.md").unlink()
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        del entries[unowned]
+        manifest.write_text(json.dumps(entries), encoding="utf-8")
+        self.assertEqual(self.install(check=True), 1)
+        self.assertEqual(self.install(), 0)
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        for relative in paths.values():
+            self.assertFalse((self.home / relative).exists())
+            self.assertNotIn(relative, entries)
+        self.assertEqual((self.home / unowned).read_bytes(), original)
+        self.assertEqual(self.install(check=True), 0)
 
     def test_paths_render_and_surface_adapters_reference_shared_baseline(self):
         self.install()

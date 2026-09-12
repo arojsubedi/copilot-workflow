@@ -25,10 +25,11 @@ README is the entry point. Human documentation is not installed as runtime conte
 
 ```text
 Understand the request and relevant evidence
-  ?? question ? grounded answer
-  ?? change ? plan when warranted ? authorized implementation
-                                      ?
-                              review and verification
+  |-- question -> grounded answer
+  `-- change -> plan when warranted -> authorized implementation
+                                          |
+                                          v
+                                  review and verification
 ```
 
 Tiny changes need focused checks. A durable plan is optional unless requested or warranted by uncertainty; the [planning skill](skills/planning/SKILL.md#choose-one-artifact) owns its default `<repository-root>/plan.md` location. Review evaluates meaningful passes and reuses evidence that remains valid. A sound partial pass does not establish completion of the whole task.
@@ -40,11 +41,13 @@ The baseline's [external-action policy](instructions/baseline.md#external-action
 The active surface supplies or reads the baseline. Skill descriptions support discovery; a selected skill loads its procedure. Writing guidance and only the matching example load for meaningful prose. Private project context is progressive:
 
 ```text
-Local READY profiles ? setup ? generated routing index
-                                     ?
-                            model selects one project
-                                     ?
-                              reads one profile
+Local READY profiles -> setup -> generated routing index
+                                          |
+                                          v
+                                model selects one project
+                                          |
+                                          v
+                                  reads one profile
 ```
 
 Profiles own routing facts once. Setup reads fixed Routing bullets and generates the index; runtime selection belongs to the baseline. UNCONFIGURED profiles and templates stay in source. Connection credentials stay in the host/tool. Live metadata and repository requirements are read when needed, not cached in profiles.
@@ -53,6 +56,6 @@ Profiles own routing facts once. Setup reads fixed Routing bullets and generates
 
 Setup uses Python 3.12+ standard libraries with no network, shell, or package dependencies. It renders machine-local support paths, installs the five skills, and records generated file hashes. Sources accept UTF-8 with a BOM and CRLF/LF; installed bytes use UTF-8/LF. Profile text is copied with newline normalization, while its routing index is generated.
 
-Preflight rejects unsafe paths, ambiguous routing and conflicting installed edits before writing. Existing desired bytes can be adopted; different content can be replaced only when it matches the last owned hash. Removed sources require explicit review and cleanup of their installed files and manifest entries. Unowned neighbors remain untouched.
+Preflight rejects unsafe paths, ambiguous routing and conflicting installed edits before writes or deletions. Existing desired bytes can be adopted; different content can be replaced only when it matches the last owned hash. Stale files can be deleted only when their bytes match their previous manifest hash; already absent files lose their stale ownership entries. Edited stale files block the update and remain intact with the manifest. Unowned neighbors remain untouched.
 
 Replacement is atomic per file, not across the installation. Run one installer at a time and check/rerun after an interruption. Installed files remain generated state; source edits followed by setup are the update path. [Operational details](docs/setup.md#update-and-recover)

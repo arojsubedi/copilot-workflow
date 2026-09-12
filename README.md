@@ -24,7 +24,7 @@ Setup installs:
 - `~/.copilot/skills/`: the five workflow skills.
 - `~/.copilot/engineering-workflow/`: generated project routing/profiles, writing guidance, and the ownership manifest.
 
-In the **Copilot app**, paste the full generated `~/.copilot/copilot-instructions.md` into **Settings > Sessions > App instructions**. CLI discovers the baseline file; in VS Code, verify the bridge's actual baseline read, including fileless questions. Setup cannot update the app's UI setting. [Installation and project configuration](docs/setup.md) ? [Surface behavior](docs/copilot-compatibility.md)
+In the **Copilot app**, paste the full generated `~/.copilot/copilot-instructions.md` into **Settings > Sessions > App instructions**. CLI discovers the baseline file; in VS Code, verify the bridge's actual baseline read, including fileless questions. Setup cannot update the app's UI setting. [Installation and project configuration](docs/setup.md) | [Surface behavior](docs/copilot-compatibility.md)
 
 ## Everyday use
 
@@ -46,4 +46,4 @@ Setup preserves AGENTS.md, repository instructions, existing MCP/editor settings
 
 Edit this clone, rerun setup and check, refresh the app paste when the baseline changes, and start a fresh session. Transfer ignored profiles separately between machines; Git updates the workflow and template without syncing local project facts. Never edit installed copies or store credentials in profiles.
 
-[Current architecture and owners](DESIGN.md) ? [Conflict recovery](docs/setup.md#update-and-recover) ? [Verification checklist](docs/verification.md)
+[Current architecture and owners](DESIGN.md) | [Conflict recovery](docs/setup.md#update-and-recover) | [Verification checklist](docs/verification.md)

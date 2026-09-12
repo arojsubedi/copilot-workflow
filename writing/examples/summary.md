@@ -1,8 +1,6 @@
-# Implementation summary example
+# Summary examples
 
-ILLUSTRATIVE: fictional change and checks, not live results or an approved sample of the user's voice. Reuse the shape only when the evidence supports it.
-
-## Positive
+## Positive: implementation status
 
 `CaseService.update_status` now delegates transition rules to `CaseEventProcessor.apply_transition`. API error mapping remains in the service; reconciliation uses the same transition owner.
 
@@ -10,8 +8,20 @@ ILLUSTRATIVE: fictional change and checks, not live results or an approved sampl
 
 **Not verified:** database integration; the test database was unavailable. The required integration gate is still due before completion.
 
+## Positive: PR and Jira discussion catch-up
+
+PR #184 moves reservation reminders into the existing notification scheduler so a reminder can be sent one day before collection expires. The linked Jira story requests one reminder for active, uncollected reservations.
+
+**Discussion so far**
+
+- Delivery timing: Maya raised that the first revision calculated "one day before" in UTC, which could notify readers on the wrong local date. The author later updated the diff to use the library's timezone before scheduling. The thread is marked resolved.
+- Duplicate sends: Leon asked whether a scheduler retry could enqueue the same reminder twice. The author pointed to the existing reservation-and-date idempotency key. I inspected the current diff and confirmed that key is passed to the scheduler; whether the scheduler enforces it was not inspected.
+- Scope: the Jira description still includes cancelled reservations in its general notification wording, but a later Jira comment from Priya explicitly excludes them. The PR follows that later clarification.
+
+**Still open:** The retry thread has an author response but no explicit reviewer resolution. No other material unresolved thread is visible in the retrieved discussion.
+
 ## Negative
 
-"I inspected the transition flow, identified duplication, updated the service, repaired mocks, and ran several checks. Everything looks good."
+"Maya disliked the timezone approach, Leon thought retries were broken, and the team decided to exclude cancellations."
 
-State the changed behavior, actual check results, and material gap. Completed investigation does not establish successful verification.
+This turns concerns into attitudes or established facts and erases how the conversation changed. Attribute claims, distinguish inspected code from discussion, and call something resolved only when the source shows it.

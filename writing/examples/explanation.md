@@ -1,7 +1,5 @@
 # Explanation examples
 
-ILLUSTRATIVE: fictional code, evidence, and results; these calibrate response shape, not the user's approved voice or facts about another repository.
-
 ## Positive: cause established
 
 Question: Why is `completedAt` null after the export is created?

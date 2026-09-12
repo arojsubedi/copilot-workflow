@@ -1,51 +1,55 @@
 # Code-comment examples
 
-USER-CALIBRATED. The code and configuration contracts are fictional; these examples demonstrate prose, not reusable implementations.
-
-## Positive: ordering and caller semantics
+## Positive: phases in a substantial business flow
 
 ```python
-def make_preview(source, selection, size):
-    """Return an independent image; changes to it do not affect source."""
-    # The selection uses coordinates from the original image. Crop before
-    # resizing so those coordinates still refer to the pixels the user selected.
-    # Resizing first would move the selection and could include a different area.
-    selected = source.crop(selection)
-    return selected.resize(size)
+def reconcile_release(
+    request: ReleaseRequest,
+    packages: PackageRepository,
+    transitions: TransitionRepository,
+) -> ReconciliationResult:
+    """Reconcile a requested release with its currently persisted package state.
+
+    Validation happens before dependent package reads so a rejected release
+    cannot be mistaken for a missing package set.
+
+    :param request: Requested release identity and package versions.
+    :param packages: Source of the currently persisted package state.
+    :param transitions: Destination for state changes produced by reconciliation.
+    :return: The applied and rejected transitions for the requested release.
+    """
+    # Step 1: Validate the release identity before loading dependent state.
+    release = validate_release(request)
+
+    # Step 2: Load one consistent view of the packages in this release.
+    current = packages.for_release(release.id)
+
+    # Step 3: Reconcile desired versions without mutating persisted state.
+    result = compare_packages(current, request.packages)
+
+    # Step 4: Persist only transitions accepted by reconciliation.
+    transitions.apply(release.id, result.applied)
+    return result
 ```
 
-## Positive: embedded configuration documentation
+The comments mark real phases in a longer flow. They do not narrate the individual calls between those boundaries, and shorter functions would not need the same structure.
 
-```toml
-# Print profiles define sheet dimensions and default margins for saved reports.
-# The export request selects a profile by name; it does not supply layout rules.
-#
-# PROFILE BOUNDARY
-# ReportLayout owns pagination and overflow handling. Values here describe the
-# available space, so adding a paper size does not require another layout path.
-#
-# WHEN VALUES CHANGE
-# Each new export copies the selected profile into its saved layout. Updating a
-# profile affects later exports; it does not reformat an already saved report.
-# Removing a name still used by a saved preference makes new exports fail profile
-# lookup, so migrate those preferences before removing that entry.
-#
-# ADDING A PAPER SIZE
-# Give it a distinct name and supply dimensions and margins in millimeters.
-# ReportLayout subtracts both margins from each dimension. The remaining width
-# and height must be positive or the profile is rejected before rendering.
+## Positive: non-obvious invariant
 
-[profiles.pocket]
-width_mm = 110
-height_mm = 170
-margin_mm = 8
+```python
+# Keep the generation record until every page is published. Readers resolve the
+# active generation once, so switching it early can mix old and new preview pages.
+publisher.publish_pages(generation)
+publisher.activate(generation.id)
 ```
+
+The comment explains why ordering matters and what breaks if it changes.
 
 ## Negative
 
 ```python
-# Set the selected profile.
+# Look up the selected profile.
 selected_profile = profiles[name]
 ```
 
-The assignment already says this. Explain a non-obvious constraint when one exists; sectioned documentation belongs where readers need it, not above every lookup.
+The assignment already says this. Ordinary statements and obvious functions need no narration; comments and docstrings should explain a contract, phase, invariant, ownership boundary, or surprising consequence that the code cannot express clearly on its own.

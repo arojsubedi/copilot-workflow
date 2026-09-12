@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Research and iteratively shape a repository-grounded implementation plan. Use when the user requests a plan or plan.md, or material ambiguity, cross-boundary contracts, sequencing, or risk warrants a durable proposal. Tiny edits and well-understood implementation do not need a persistent plan. Planning does not authorize implementation.
+description: Research and shape a repository-grounded implementation plan. Use when requested or when material ambiguity, contracts, sequencing, or risk warrant a durable proposal. Planning does not authorize implementation.
 ---
 
 # Planning
@@ -61,6 +61,6 @@ Do not append revisions, addenda, corrections, decision logs, or chronological r
 
 Present the current plan with its location, material unresolved decisions, and readiness limits. A first draft is not agreement. Plan acceptance, “looks closer,” research requests, and phase edits do not authorize coding. Ask for or recognize explicit direction to implement; reuse authorization already given when it clearly covers implementation after planning. Without it, stop at the proposal.
 
-Planning permits inspection, research, discussion, and local plan writes only. Do not incidentally edit production code, tests, prototypes, or configuration. Checks must respect this boundary and the baseline's External-action policy. Planning grants no commit, publication, external-mutation, or destructive authority.
+Planning permits inspection, research, discussion, and local plan writes only. Do not incidentally edit production code, tests, prototypes, or configuration. Checks must respect this boundary and the baseline's approval rules. Planning grants no commit, publication, external-mutation, or destructive authority.
 
 On authorized handoff, [implementation](../implementation/SKILL.md) consumes the plan as evidence alongside current code. Routine details remain autonomous; consequential invalidation requires reconciling the affected assumption and updating this same plan before dependent implementation. Never create a competing specification.

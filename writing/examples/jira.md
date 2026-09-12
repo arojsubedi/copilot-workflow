@@ -1,7 +1,5 @@
 # Jira example
 
-USER-CALIBRATED. The scenario and requirements are fictional.
-
 Title: Remind readers before a book reservation expires
 
 Readers currently receive a message when a reserved book is ready for collection, but there is no reminder before the reservation expires. Someone who misses the first message may not realize that the book is still waiting for them.

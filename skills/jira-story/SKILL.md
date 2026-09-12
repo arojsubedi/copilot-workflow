@@ -1,6 +1,6 @@
 ---
 name: jira-story
-description: Draft, revise, and create one Jira story using the project's existing Jira MCP connection. Use for story drafting or creation requests, including an explicitly named project. Preview the complete action and create only after approval; do not use for implementing a story.
+description: Draft or create one Jira story. Use for story preparation or creation, including for a named project; not for implementing an issue.
 ---
 
 # Jira story
@@ -9,7 +9,7 @@ Own the outcome from rough requirement to a verified created issue. A draft-only
 
 ## Resolve and understand
 
-1. Read `{{BASELINE_PATH}}` if its full text is absent from the visible context (read it if unsure); its External-action policy owns authorization. Read `{{WORKFLOW_ROOT}}/projects/index.md` and only the selected profile. An explicit story target can differ from the checkout; never use another project's code as evidence. UNCONFIGURED profiles permit illustrative drafts only.
+1. Read `{{BASELINE_PATH}}` if its full text is absent from the visible context (read it if unsure); it owns approval for external changes. Read `{{WORKFLOW_ROOT}}/projects/index.md` and only the selected profile. An explicit story target can differ from the checkout; never use another project's code as evidence. UNCONFIGURED profiles permit illustrative drafts only.
 2. Match the profile's Jira MCP connection, site, and project to connection metadata or read results. Inspect the actual tool schemas; do not assume tool names. Use this existing MCP directly. If unavailable, report the gap and produce a provisional draft when useful; never substitute another Jira site or a shell write.
 3. Inspect supplied requirements/issues and relevant code or related issues when they can resolve ambiguity or reveal a duplicate. Separate requested behavior, evidenced obligations, choices, assumptions, and suggestions. Code does not establish intent, and Jira wording does not prescribe architecture. For consequential contract changes, inspect available consumers and rollout constraints. Ask only unresolved decisions that affect the story.
 4. Read create metadata and required fields for the project's story issue type (default Story). Resolve its ID live. If a board is specified, check its filter when accessible: issues belong to projects, and board inclusion follows the filter. Do not invent a board field, estimates, labels, sprint, acceptance criteria, or operational requirements.
@@ -29,7 +29,7 @@ Revise the complete preview conversationally. Resolve required fields and conseq
 
 ## Mutation boundary: create
 
-Apply the baseline's External-action policy here. Obtain explicit approval of the complete current action. Recheck the selected profile, target, required fields, and approved payload; search for a likely duplicate if intervening activity makes creation uncertain. Material changes follow the baseline's renewal rule.
+Apply the baseline's approval rules here. Obtain explicit approval of the complete current action. Recheck the selected profile, target, required fields, and approved payload; search for a likely duplicate if intervening activity makes creation uncertain. Material changes follow the baseline's renewal rule.
 
 Call the configured Jira MCP to create exactly the approved issue. Do not add comments, links, transitions, epics, or other writes unless separately previewed and approved. Keep per-call tool approval enabled.
 

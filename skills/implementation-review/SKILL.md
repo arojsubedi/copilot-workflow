@@ -1,13 +1,13 @@
 ---
 name: implementation-review
-description: Review a meaningful nontrivial implementation pass for grounded behavior, ownership, proportionate complexity, test value, and verification gaps before continuing or finishing the pass. Revisit materially invalidated conclusions as work evolves. Also use for requested implementation self-review; tiny clear edits need only focused checks.
+description: Assess a meaningful implementation pass before it continues or finishes. Use for implementation self-review; not for full PR review or tiny edits.
 ---
 
 # Implementation review
 
 Decide whether the current implementation is a grounded, correct, proportionate solution with enough evidence to continue or finish this pass. Use after a meaningful implementation pass, not after every edit. This is iterative engineering self-review, not exhaustive PR review, specialist audit, or release certification. Do not spawn specialist reviewers or expand into a repository-wide audit.
 
-Read `{{BASELINE_PATH}}` if its full text is absent from the visible context (read it if unsure). It owns engineering defaults and the single External-action policy. Use the applicable repository guidance and, when identity or private conventions matter, `{{WORKFLOW_ROOT}}/projects/index.md` and its selected profile. Reuse context already read and current.
+Read `{{BASELINE_PATH}}` if its full text is absent from the visible context (read it if unsure). It owns engineering defaults and approval for external changes. Use the applicable repository guidance and, when identity or private conventions matter, `{{WORKFLOW_ROOT}}/projects/index.md` and its selected profile. Reuse context already read and current.
 
 ## Bound this pass
 
@@ -46,6 +46,6 @@ Report only useful findings, evidence for continuing or completing this pass, ch
 
 ## Mutation boundary
 
-A review-only request permits inspection and safe local verification, including ordinary disposable test/build outputs. It does not authorize source fixes, staging, commits, discarding work, or publication. During an already authorized implementation, fix findings within that scope and recheck affected behavior. Apply the baseline policy before any check or action with external, destructive, or production effects.
+A review-only request permits inspection and safe local verification, including ordinary disposable test/build outputs. It does not authorize source fixes, staging, commits, discarding work, or publication. During an already authorized implementation, fix findings within that scope and recheck affected behavior. Apply the baseline's approval rules before any check or action with external, destructive, or production effects.
 
 `prepare-pr` may reuse this assessment or request a bounded reassessment against its pinned comparison, in review-only mode. Use its requirement evidence and comparison without rerouting projects. It owns publication, reviewer selection, and remote verification; this skill supplies implementation evidence, not integration approval or specialist certification. Load writing guidance through the baseline when authoring a substantial review.

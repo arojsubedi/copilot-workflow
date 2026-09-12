@@ -37,10 +37,11 @@ class ContentTests(unittest.TestCase):
                     if anchor:
                         self.assertIn(anchor, headings(target.read_text(encoding="utf-8-sig")))
 
-    def test_five_skills_have_valid_metadata_and_installed_references(self):
-        expected = {"planning", "implementation", "implementation-review", "jira-story", "prepare-pr"}
-        skills = list((SOURCE / "skills").glob("*/SKILL.md"))
-        self.assertEqual({path.parent.name for path in skills}, expected)
+    def test_discovered_skills_have_valid_metadata_and_installed_references(self):
+        skill_directories = sorted(path for path in (SOURCE / "skills").iterdir() if path.is_dir())
+        skills = sorted((SOURCE / "skills").glob("*/SKILL.md"))
+        self.assertTrue(skills)
+        self.assertEqual([path.parent for path in skills], skill_directories)
         # Build rendered content without writing into a real Copilot home.
         with tempfile.TemporaryDirectory(prefix="workflow-content-test-") as temporary:
             source = Path(temporary) / "source"
@@ -56,7 +57,9 @@ class ContentTests(unittest.TestCase):
                 self.assertEqual(set(fields), {"name", "description"})
                 self.assertEqual(fields["name"], skill.parent.name)
                 self.assertRegex(fields["name"], r"^[a-z]+(?:-[a-z]+)*$")
-                self.assertTrue(0 < len(fields["description"]) <= 1024)
+                description = fields["description"].strip('"').strip()
+                self.assertTrue(description)
+                self.assertLessEqual(len(description), 1024)
                 destination = ".copilot/skills/" + skill.parent.name + "/SKILL.md"
                 rendered = files[destination].decode("utf-8")
                 self.assertNotIn("{{", rendered)

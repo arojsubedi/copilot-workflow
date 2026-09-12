@@ -1,7 +1,5 @@
 # Plan examples
 
-ILLUSTRATIVE: fictional repository, symbols, and checks; these examples demonstrate density, structure, and voice. They are not required templates or evidence about a real project.
-
 ## Positive: focused change
 
 ```markdown

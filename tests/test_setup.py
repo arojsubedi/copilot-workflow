@@ -42,17 +42,22 @@ class InstallTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             return SETUP.install(source or self.source, self.home, check)
 
+    def uninstall(self):
+        with redirect_stdout(io.StringIO()):
+            return SETUP.uninstall(self.home)
+
     def configure(self, names, source=None):
         source = source or self.source
         for number, name in enumerate(names):
             (source / "projects" / name).write_text(
                 f"# Fixture {number}\n\nConfiguration status: READY\n\n## Routing\n\n"
-                f"- Aliases: service{number}, project{number}\n"
+                f"- Project: Project {number}\n"
                 f"- Git remote: git.test/team/service{number}\n"
                 f"- Jira prefix: ABC{number}\n\n## Connections\n\n"
                 "- GitHub MCP connection: github-fixture\n"
                 "- Jira MCP connection: jira-fixture\n"
-                "- Jira site: https://jira.test\n", encoding="utf-8", newline="\n")
+                "- Jira site: https://jira.test\n\n## Pull requests\n\n"
+                f"- Reviewers: reviewer{number}, backup{number}\n", encoding="utf-8", newline="\n")
 
     def test_fresh_clone_and_unconfigured_profiles_do_not_write_source(self):
         draft = self.source / "projects/draft.md"
@@ -81,18 +86,19 @@ class InstallTests(unittest.TestCase):
             installed = self.home / ".copilot/engineering-workflow/projects"
             self.assertEqual({p.name for p in installed.iterdir()}, {"index.md", *names})
             index = (installed / "index.md").read_text(encoding="utf-8")
-            expected_rows = [f"| {name} | service{i}, project{i} | git.test/team/service{i} | ABC{i} | unset |"
+            expected_rows = [f"| {name} | Project {i} | git.test/team/service{i} | ABC{i} | unset |"
                              for i, name in enumerate(names)]
             self.assertEqual(index.splitlines()[6:], sorted(expected_rows))
             self.assertNotIn("github-fixture", index)
             for name in names:
                 self.assertEqual((installed / name).read_bytes(), (self.source / "projects" / name).read_bytes())
+                self.assertIn("- Reviewers: reviewer", (installed / name).read_text(encoding="utf-8"))
             self.assertEqual(self.install(check=True), 0)
         profile = self.source / "projects/sre-api.md"
-        profile.write_text(profile.read_text(encoding="utf-8").replace("service0, project0", "api, service"), encoding="utf-8")
+        profile.write_text(profile.read_text(encoding="utf-8").replace("Project 0", "Service API"), encoding="utf-8")
         self.assertEqual(self.install(check=True), 1)
         self.assertEqual(self.install(), 0)
-        self.assertIn("| sre-api.md | api, service |", (installed / "index.md").read_text())
+        self.assertIn("| sre-api.md | Service API |", (installed / "index.md").read_text())
         self.assertEqual(self.install(check=True), 0)
 
     def test_routing_errors_block_install_and_check_before_writes(self):
@@ -105,13 +111,15 @@ class InstallTests(unittest.TestCase):
             ("Configuration status: READY", "Configuration status: READY\nConfiguration status: READY"),
             ("## Routing", "## Routes"),
             ("## Connections", "## Routing"),
+            ("- Project: Project 0", ""),
+            ("- Project: Project 0", "- Project: Project 0\n- Project: Another"),
+            ("- Project: Project 0", "- Aliases: Project 0"),
             ("- Jira prefix: ABC0", ""),
             ("- Jira prefix: ABC0", "- Jira prefix: abc"),
             ("- Jira prefix: ABC0", "- Jira prefix: ABC0\n- Jira prefix: ABC1"),
             ("- Jira prefix: ABC0", "- Jira project: ABC0"),
-            ("- Aliases: service0, project0", "- Aliases: unset"),
-            ("- Aliases: service0, project0", "- Aliases: api,,portal"),
-            ("- Aliases: service0, project0", "- Aliases: api|portal"),
+            ("- Project: Project 0", "- Project: unset"),
+            ("- Project: Project 0", "- Project: api|portal"),
             ("git.test/team/service0", "https://git.test/team/service0"),
             ("git.test/team/service0", "git@host:team/service0"),
             ("git.test/team/service0", "https://user:private-token@git.test/team/service0"),
@@ -135,13 +143,12 @@ class InstallTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Supply a Git remote or Jira prefix"):
             self.install()
 
-    def test_duplicate_aliases_and_remote_identities_are_rejected(self):
+    def test_duplicate_project_names_and_remote_identities_are_rejected(self):
         self.configure(["sre-api.md", "portal.md"])
         first = self.source / "projects/sre-api.md"
         second = self.source / "projects/portal.md"
         original = second.read_text(encoding="utf-8")
-        replacements = [("service1, project1", "SERVICE0"),
-                        ("service1, project1", "portal, Portal"),
+        replacements = [("Project 1", "PROJECT 0"),
                         ("git.test/team/service1", "GIT.TEST/TEAM/SERVICE0.git")]
         for old, new in replacements:
             second.write_text(original.replace(old, new), encoding="utf-8")
@@ -149,9 +156,9 @@ class InstallTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Duplicate"):
                     self.install(check=check)
                 self.assertFalse(self.home.exists())
-        first.write_text(first.read_text(encoding="utf-8").replace("service0, project0", "caf\u00e9"), encoding="utf-8")
-        second.write_text(original.replace("service1, project1", "cafe\u0301"), encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "Duplicate alias"):
+        first.write_text(first.read_text(encoding="utf-8").replace("Project 0", "caf\u00e9"), encoding="utf-8")
+        second.write_text(original.replace("Project 1", "cafe\u0301"), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Duplicate project"):
             self.install()
 
     def test_shared_jira_prefix_and_sparse_git_or_jira_routing(self):
@@ -262,7 +269,7 @@ class InstallTests(unittest.TestCase):
             if next_name:
                 expected.add(next_name)
                 self.assertIn(".copilot/engineering-workflow/projects/" + next_name, entries)
-                self.assertIn("| " + next_name + " | service0, project0 |", index)
+                self.assertIn("| " + next_name + " | Project 0 |", index)
                 self.assertEqual((installed / next_name).read_bytes(), profile.read_bytes())
             else:
                 self.assertIn("Configuration status: UNCONFIGURED", index)
@@ -604,6 +611,60 @@ class InstallTests(unittest.TestCase):
                 self.assertEqual(self.install(), 0)
                 self.assertEqual(self.install(check=True), 0)
 
+    def test_uninstall_removes_only_unchanged_owned_files_and_allows_reinstall(self):
+        self.configure(["my-project.md"])
+        self.install()
+        manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        already_absent = self.home / ".copilot/skills/planning/SKILL.md"
+        already_absent.unlink()
+        unrelated = self.home / ".copilot/skills/unrelated/SKILL.md"
+        unrelated.parent.mkdir(parents=True)
+        unrelated.write_text("Unrelated skill", encoding="utf-8")
+
+        self.assertEqual(self.uninstall(), 0)
+        self.assertFalse(manifest.exists())
+        for relative in entries:
+            self.assertFalse((self.home / relative).exists(), relative)
+        self.assertEqual(unrelated.read_text(encoding="utf-8"), "Unrelated skill")
+
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        self.assertEqual(unrelated.read_text(encoding="utf-8"), "Unrelated skill")
+
+    def test_uninstall_preflight_preserves_everything_when_managed_file_changed(self):
+        self.install()
+        target = self.home / ".copilot/engineering-workflow/writing/style.md"
+        target.write_text("Locally edited guidance", encoding="utf-8")
+        before = {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()}
+
+        with self.assertRaisesRegex(ValueError, "No files removed"):
+            self.uninstall()
+
+        self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
+
+    def test_uninstall_without_manifest_is_a_safe_noop(self):
+        unrelated = self.home / ".copilot/settings.json"
+        unrelated.parent.mkdir(parents=True)
+        unrelated.write_text("{}", encoding="utf-8")
+        self.assertEqual(self.uninstall(), 0)
+        self.assertEqual(unrelated.read_text(encoding="utf-8"), "{}")
+
+    def test_uninstall_rejects_manifest_claim_on_unrelated_configuration(self):
+        self.install()
+        unrelated = self.home / ".copilot/settings.json"
+        unrelated.write_text("{}", encoding="utf-8")
+        manifest = self.home / SETUP.MANIFEST_RELATIVE
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        entries[".copilot/settings.json"] = SETUP.digest(unrelated.read_bytes())
+        manifest.write_text(json.dumps(entries), encoding="utf-8")
+        before = {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()}
+
+        with self.assertRaisesRegex(ValueError, "Invalid install manifest"):
+            self.uninstall()
+
+        self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
+
     def test_malformed_manifest_blocks_writes(self):
         manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
         manifest.parent.mkdir(parents=True)
@@ -687,6 +748,11 @@ class InstallTests(unittest.TestCase):
         self.assertFalse(self.home.exists())
         self.assertEqual(run().returncode, 0)
         self.assertEqual(run("--check").returncode, 0)
+        uninstall = run("--uninstall")
+        self.assertEqual(uninstall.returncode, 0)
+        self.assertIn(b"clear them manually", uninstall.stdout)
+        self.assertEqual(run("--check").returncode, 1)
+        self.assertEqual(run().returncode, 0)
         env["COPILOT_HOME"] = str(self.home / ".copilot")
         self.assertEqual(run("--check").returncode, 0)
         env["COPILOT_HOME"] = str(self.root / "different config")

@@ -1,7 +1,5 @@
 # PR examples
 
-USER-CALIBRATED. All Jira keys, components, behavior, and verification evidence are fictional. These are two scales of description, not required templates.
-
 ## Positive: focused change
 
 Title: `[APP-1842] Keep the selected measurement unit when reopening a chart`

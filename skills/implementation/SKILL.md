@@ -1,6 +1,6 @@
 ---
 name: implementation
-description: Construct a meaningful code change using the affected subsystem's contracts, vocabulary, ownership, and test boundaries. Use during implementation; tiny edits, explanation-only requests, and review-only requests do not need this skill.
+description: Construct a meaningful code change from repository evidence and contracts. Use for implementation; not for tiny edits, explanations, or review-only requests.
 ---
 
 # Implementation
@@ -55,4 +55,4 @@ Use `implementation-review` after meaningful passes, with the current phase clea
 
 ## Mutation boundary
 
-Requested implementation permits scoped, reversible local edits. This skill grants no independent authority to commit, publish, push, open a PR, mutate an external service, or perform destructive/production actions. Apply the baseline's External-action policy to consequential actions, including checks with such effects. An explanation-only or review-only request does not become an implementation request by loading this skill.
+Requested implementation permits scoped, reversible local edits. This skill grants no independent authority to commit, publish, push, open a PR, mutate an external service, or perform destructive/production actions. Apply the baseline's approval rules to consequential actions, including checks with such effects. An explanation-only or review-only request does not become an implementation request by loading this skill.

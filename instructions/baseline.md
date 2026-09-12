@@ -37,7 +37,7 @@ Load `jira-story` for story drafting/creation and `prepare-pr` for PR preparatio
 
 Put the requested answer or result first, with concrete claims and the evidence needed to judge them. Before meaningful engineering prose, read `{{WORKFLOW_ROOT}}/writing/style.md` and only its matching example file if present. This includes external drafts, plans, designs, reviews, substantial summaries, and explanations. Skip style/example reads for code-only work and brief factual replies; reuse already-read guidance within the same context.
 
-## External-action policy
+## Approval for external changes
 
 Inspection and drafts are permitted; requested implementation authorizes scoped, reversible local edits. External publication/mutation, destructive actions, and production operations require a complete preview of the operation, target, payload, and consequential effects, followed by explicit approval. This includes Jira writes, PRs/reviews/reviewer changes, pushes, merges, and deletion. Execute only approved actions, then verify results.
 
@@ -47,4 +47,4 @@ Silence, plan approval, tool availability, and auto-approval do not authorize pu
 
 ## Context inspection
 
-On request, report the repository, profile, skill, writing files actually read, selected MCP server/site, and loading failures. Distinguish observed reads from assumed discovery; do not claim knowledge of hidden model attention. Show resolved targets in external-action previews.
+On request, report the repository, profile, skill, writing files actually read, selected MCP server/site, and loading failures. Distinguish observed reads from assumed discovery; do not claim knowledge of hidden model attention. Show resolved targets in previews for external changes.

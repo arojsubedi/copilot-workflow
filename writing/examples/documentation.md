@@ -1,7 +1,5 @@
 # Documentation example
 
-USER-CALIBRATED. The component and contracts below are fictional. This models a standalone guide, not a mandatory section layout.
-
 ## Positive
 
 ```markdown

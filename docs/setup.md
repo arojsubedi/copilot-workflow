@@ -1,77 +1,89 @@
-# Setup and updates
+# Configure, install, update, and remove
 
-Keep this clone outside work repositories. Python 3.12+ and its standard library are sufficient; setup makes no network calls and changes only its generated destinations. It does not modify source profiles, work repositories, AGENTS.md, MCP configuration, or editor settings.
+Keep this clone outside work repositories. Python 3.12 or newer and its standard library are sufficient. Setup does not change work repositories, MCP connections, editor settings, or repository instruction files.
 
-## Project configuration
+## Configure a project
 
-1. Copy `projects/project.example.md` to a meaningful name such as `projects/sre-api.md`.
-2. Fill in the stable private facts. Keep `UNCONFIGURED` while editing; mark `READY` only after verifying the identity and connection choices. Repeat for other projects.
-3. Run setup and check. There is no source index to edit.
+1. Copy `projects/project.example.md` to `projects/my-project.md`.
+2. Replace the placeholders with verified project facts. Remove optional sections or fields that do not apply.
+3. Set `Configuration status: READY`.
+4. Repeat for any other projects, then run setup.
 
-Each READY profile needs one `Configuration status: READY` line and one `## Routing` section with these exact single-line bullets:
+The identification section is intentionally small:
 
 ```markdown
 ## Routing
 
-- Aliases: service-api, service
-- Git remote: github.example.com/org/repository
+- Project: My Project
+- Git remote: github.example.internal/team/repository
 - Jira prefix: ABC
 ```
 
-The values above are placeholders. Replace them before marking READY. Aliases are comma-separated; include the project name if you want it selectable by that name. Git identity is `host/owner/repository`, without a URL scheme, username, token, or SSH alias; a trailing `.git` is normalized for matching. Use `unset` for Git remote or Jira prefix when inapplicable, but supply at least one. The Jira prefix is also the project key, so do not repeat it under Connections.
+Use the name you naturally use for the project. The Git remote is `host/owner/repository`, without a URL scheme or credentials. Use `unset` for an inapplicable Git remote or Jira prefix, but keep at least one of them. An optional `- Local root: ...` may identify an offline checkout on this machine.
 
-An optional `- Local root: ...` bullet can hold an absolute Git root for an offline checkout on this machine, or `unset`. Remote identity is preferred across machines and worktrees. When transferring profiles, update that optional machine path if needed. Values may be plain or enclosed in one pair of backticks. Keep the Routing section to these bullets; place free Markdown under another heading.
+Put GitHub and Jira connection names and the Jira site under `## Connections`. Put default GitHub usernames under `## Pull requests`:
 
-Use filenames directly under `projects/`, with a lowercase `.md` extension. Lowercase kebab-case is convenient; spaces and Unicode are supported. `index.md`, `README.md`, Windows device names, linked paths, and backticks are not profile names. Filename case/Unicode collisions are rejected. Nested files are not scanned. `.example.md` files are human templates and never installed.
+```markdown
+## Pull requests
 
-Setup scans every local profile and includes only READY profiles. It rejects missing/malformed routing, duplicate aliases (including within a profile), duplicate Git identities, invalid roots, exact placeholder tokens from `project.example.md`, and reserved example domains (`example.com`, `example.org`, `example.net`, and `.invalid`) in READY content. Alias/Git comparisons ignore case and normalize Unicode. Shared Jira prefixes are allowed because several repositories may belong to one Jira project; a prefix never selects a server. Outside Routing, HTML such as `<details>`/`<summary>` and title-format tokens such as `<JIRA-KEY>`, `<JIRA-SUMMARY>`, and `<SUMMARY>` are allowed.
+- Reviewers: reviewer-one, reviewer-two
+```
 
-The remaining profile content is free Markdown. Store MCP connection names from the clients actually configured, the Jira site, and only genuine private conventions or overrides. Remove an inapplicable connection instead of leaving a placeholder. Client-specific connection mappings may be labeled there. Optional examples of useful conventions are a private reviewer rule, a required PR-title format, or Given/When/Then acceptance criteria. Omit generic bodies, ordinary check commands, discoverable base branches, and live field/board IDs. [Artifact responsibilities](../writing/style.md#artifact-requirements-and-presentation)
+PR preparation combines those names with applicable repository requirements, verifies eligibility when possible, excludes the author, removes duplicates, and shows the exact reviewer list before requesting approval.
 
-Profiles are intentionally ignored by Git. `git check-ignore projects/sre-api.md` should report the file; `project.example.md` remains trackable. Nested documentation is unaffected. Authentication stays in the host/tool: ignored configuration is not secret storage.
+Profiles should contain only facts that are private, hard to derive, or genuinely project-specific. Good examples are connection identities, reviewers, a private PR-title convention, or a required acceptance-criteria convention. Leave repository commands, coding standards, generic templates, architecture, and live board fields to the repository and tools.
 
-## Install and inspect
+Profiles remain local and are ignored by Git. They are configuration, not credential storage.
+
+## Install and check
+
+Run from this clone:
 
 ```text
 python setup.py
 python setup.py --check
 ```
 
-Use `python3` on macOS if needed. An absolute script path works from any directory; source is located relative to the script. `--home <directory>` selects a temporary test destination or intentional install home, but does not configure Copilot to discover it. Conflicting `COPILOT_HOME` values are rejected; use the shared default layout.
+The first command installs or updates the workflow. The second verifies that installed content matches the source. A fresh install without READY profiles is valid for repository-only work; setup will report that project-dependent workflows are not configured.
 
-Without READY profiles, setup reports the configuration gap and generates a compact UNCONFIGURED index. `--check` can return 0 for that state: it verifies file consistency, not live readiness. UNCONFIGURED profiles stay source-only. Required facts for a particular action are checked by that task's skill against repository/tool evidence.
+If you use the Copilot app, paste the full generated personal instruction file into **Settings > Sessions > App instructions**. Setup cannot edit this UI field. Start a fresh session after installing or updating.
 
-In the Copilot app, paste the complete generated `~/.copilot/copilot-instructions.md` into **Settings > Sessions > App instructions**. Preserve wanted UI preferences by merging them into source and regenerating first. Setup cannot edit that UI field. CLI/VS Code discovery, actual read checks, and permissions are described in [compatibility](copilot-compatibility.md).
+For a disposable test destination, use `python setup.py --home <directory>`. That option installs files there but does not make Copilot discover the alternate location.
 
-## Installed layout
+## Update
 
-`~` is the home resolved by Python. All destinations are generated:
+Update this source clone or edit its tracked guidance, then rerun:
 
-| Source | Destination under the selected home |
-| --- | --- |
-| `instructions/baseline.md` | `.copilot/copilot-instructions.md` |
-| Bridge generated by setup | `.copilot/instructions/engineering-workflow.instructions.md` |
-| Local READY profiles and generated index | `.copilot/engineering-workflow/projects/` |
-| `writing/**/*.md` | `.copilot/engineering-workflow/writing/` |
-| `skills/**/*.md` | `.copilot/skills/<name>/` |
-| Ownership hashes | `.copilot/engineering-workflow/install-manifest.json` |
+```text
+python setup.py
+python setup.py --check
+```
 
-Setup renders `{{WORKFLOW_ROOT}}` and `{{BASELINE_PATH}}` in baseline, skills, and writing files. Project profiles contain their own facts and are copied with UTF-8/newline normalization. The generated project index contains routing data only. Human docs and the project template stay in source. Project plans follow the [planning skill](../skills/planning/SKILL.md#choose-one-artifact); setup does not manage them.
+If the engineering defaults changed, refresh the manual Copilot app instructions as well. Existing local profiles are not updated from the template; apply useful template changes to them deliberately.
 
-## Update and recover
+## Uninstall
 
-Edit source, rerun setup/check, refresh the app paste when the baseline changes, and start a fresh session. Git updates the workflow/template without rewriting ignored profiles. Incorporate relevant template changes manually and transfer local profiles separately between machines.
+Run:
 
-| Exit code | Meaning |
-| --- | --- |
-| 0 | Install completed, or generated files and manifest match |
-| 1 | Check found missing/outdated files or manifest entries |
-| 2 | Conflict, invalid configuration/manifest, unsafe path, or I/O failure |
+```text
+python setup.py --uninstall
+```
 
-Check mode never writes or deletes. Setup preflights all desired and stale destinations before mutation. It may replace content only when absent, identical to the desired result, or matching the last owned hash. Even newline-only installed edits count as drift. The manifest is an ownership record, not a security signature.
+Uninstall first checks every file recorded as belonging to this workflow. Missing files count as already removed. Unchanged managed files are removed, along with the workflow's ownership record. If any managed file has been edited or replaced, uninstall stops before removing anything and reports the conflict. Unrelated files and neighboring Copilot configuration are never removed.
 
-For a conflict, compare installed content with source, merge wanted edits into source, back up the conflicting file, and remove only that installed file before rerunning. Unrelated instructions/skills are preserved. A different same-name skill at an exact managed destination blocks installation; a same-name skill in another discovery location may shadow ours without a file conflict.
+Setup cannot remove instructions pasted into the Copilot app. Clear that UI field manually after uninstalling if you used it for this workflow.
 
-Removing, renaming, or marking a previously installed profile UNCONFIGURED makes its installed copy stale. Removed skills/writing files follow the same rule. Setup deletes a stale file only when its bytes match the previous manifest hash, then removes its ownership entry. Already absent stale files only need that entry removed. No manual manifest edit is needed. Locally edited stale files block the entire update and remain intact with the manifest; use the conflict recovery above. Check returns 1 for safely removable or absent stale output, or 2 for a conflict, without changing anything. Unowned neighbors are never deleted or included in the generated index.
+## Recover from a conflict
 
-Run one installer at a time. Writes are atomic per file; an interrupted update can normally be checked and rerun against the same source. Inspect content conflicts if files changed again. Failed writes clean up temporary siblings; a process kill can leave a temporary file for inspection. Do not erase whole configuration directories or reset the manifest to bypass ownership.
+A conflict usually means an installed file was edited directly or another workflow already uses the same destination. Setup and uninstall stop before making partial changes.
+
+1. Inspect the reported installed file and its source counterpart.
+2. Copy any change you want to keep into this source repository or another safe location.
+3. Remove only the reported installed file after preserving what matters.
+4. Rerun the intended setup or uninstall command.
+
+Do not delete whole Copilot configuration directories or edit the ownership record to force an operation. Unrelated instructions, skills, and settings may live beside this workflow.
+
+Exit code `0` means the requested operation completed or the check matched. Check mode uses `1` for differences. Invalid configuration, unsafe paths, conflicts, and I/O failures use `2`.
+
+See [technical details](technical-details.md) for validation rules, installed paths, ownership behavior, and client compatibility.

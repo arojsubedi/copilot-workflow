@@ -1,7 +1,5 @@
 # Review examples
 
-USER-CALIBRATED. All identifiers, scenarios, and evidence below are fictional.
-
 ## Positive: focused comment
 
 `set_quantity` saves the new amount before checking whether it is negative. The request returns a validation error, but the invalid value is already stored. What do you think about validating the quantity before calling `save` so a rejected request leaves the item unchanged?

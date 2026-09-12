@@ -32,8 +32,6 @@ Run the existing export service and UI checks documented in `CONTRIBUTING.md`. E
 These are planned checks, not passing results.
 ```
 
-This change is contained enough that named phases would add ceremony without clarifying the implementation.
-
 ## Positive: substantial change
 
 ```markdown
@@ -69,7 +67,7 @@ This removes duplicate transition ownership without adding another abstraction.
 
 Extend `CaseEventProcessor.apply_transition` to support the transition cases currently accepted through `CaseService.update_status`.
 
-Preserve existing domain validation and distinguish invalid transitions from stale-state conflicts. Use existing transition checks diagnostically if needed to test that assumption before routing the API path; correct production contract violations when found.
+Preserve existing domain validation and distinguish invalid transitions from stale-state conflicts.
 
 ### Phase 2: Route API updates through the shared owner
 
@@ -100,12 +98,8 @@ Exercise:
 
 Confirm that both API and reconciliation persist through `CaseRepository.transition` while retaining their existing boundary-specific error behavior.
 
-Distinguish stale test assumptions from real production failures, fix defects, and recheck affected behavior. These are planned checks, not passing results.
+These are planned checks, not passing results.
 ```
-
-The functional phases follow real dependency and ownership boundaries: establish the common behavior, migrate the API path, and complete dependents. Diagnostic checks may guide construction; test maintenance and new coverage belong in the final verification phase once production behavior is coherent.
-
-If a revision replaces a proposed `StatusTransitionService` with the existing `CaseEventProcessor`, rewrite the approach and dependent phases together. Remove the superseded owner and its rationale so this remains one current proposal.
 
 ## Negative: history and mechanical phasing
 
@@ -130,4 +124,4 @@ Write tests.
 We decided to use the event processor instead. Keep Phase 1 above for context.
 ```
 
-Replace the obsolete owner and dependent phases instead of appending history. File type alone does not establish a dependency boundary, and routine line-level edits do not belong in the proposal. Plan the behavior, ownership, constraints, and verification that matter for implementation.
+The reader cannot tell which approach applies, and the generic phase labels hide the actual behavior and dependencies.

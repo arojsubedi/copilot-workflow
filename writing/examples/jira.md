@@ -1,6 +1,6 @@
 # Jira example
 
-USER-CALIBRATED. The scenario and requirements are fictional. A project's required fields and acceptance-criteria format still apply.
+USER-CALIBRATED. The scenario and requirements are fictional.
 
 Title: Remind readers before a book reservation expires
 

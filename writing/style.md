@@ -18,9 +18,11 @@ Name what now works and where. Make actual verification results and material gap
 
 For failures, connect the affected location and observed behavior to its consequence and useful diagnostic or correction. State verified defects directly; when reasoning from incomplete context, identify the inference and use a natural question if it helps resolve it. Do not add habitual hedges or repeat stock collaborative phrases. Keep the tone factual, without drama or long apologies. Preserve evidence, consequential tradeoffs, uncertainty, and verification limits beside the claims they qualify.
 
-## Fit the output
+## Artifact requirements and presentation
 
-Project templates and artifact semantics govern structure: PR diff and validation, story problem and acceptance criteria, review trigger/consequence/correction, plan decisions and verification, design boundaries, summary outcomes and gaps. Label optional review preferences. Apply information hierarchy within those formats, without conversational state or next-action labels. Omit empty sections unless required.
+Live repository/tool requirements determine mandatory fields and structure, including required PR templates and Jira schemas. The selected project profile supplies only genuine private project conventions or overrides that are not reliably available live; resolve consequential conflicts against current evidence. The task skill owns evidence gathering, drafting, preview, authorization, and execution. This style and the matching example supply voice, density, and default presentation wherever no required structure or project override applies.
+
+For a required repository PR template, preserve its sections and use the PR example's voice inside them. Without a required template or profile override, use that example's shape as the default. For project-required Given/When/Then acceptance criteria, use that structure with the Jira example's voice. Omit empty sections unless required, and keep conversational progress labels outside artifacts.
 
 Start with substance; useful framing is itself a conclusion. Cut ceremonial openers, vague benefits, self-praise, repetition, and closing pleasantries. End when complete, without an offer, recap, or invented task. Name needed next actions; mention workflow state only when it helps continuity or a decision. Give duration estimates only when requested, supported by evidence, and qualified for uncertainty.
 

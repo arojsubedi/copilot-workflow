@@ -2,8 +2,6 @@
 
 USER-CALIBRATED. All Jira keys, components, behavior, and verification evidence are fictional. These are two scales of description, not required templates.
 
-PR titles follow the project's configured format. When the project convention uses the Jira story summary, preserve that summary rather than inventing a different PR title.
-
 ## Positive: focused change
 
 Title: `[APP-1842] Keep the selected measurement unit when reopening a chart`
@@ -49,4 +47,4 @@ Title: `Improve document preview processing`
 
 "This enhancement delivers a robust preview solution that seamlessly optimizes the document experience through a scalable processing framework."
 
-If the project convention uses the Jira story summary, do not replace it with a generic PR title. In the description, name what changed, explain the behavior that matters, and keep unsupported capacity or reliability claims out.
+Name what changed, explain the behavior that matters, and keep unsupported capacity or reliability claims out.

@@ -24,7 +24,7 @@ def copy_source(destination):
     """Use distribution files only, never the developer's local project facts."""
     def ignore(directory, names):
         if Path(directory) == SOURCE / "projects":
-            return set(names) - {"index.example.md", "project.example.md"}
+            return set(names) - {"project.example.md"}
         return {".git", "__pycache__"}
     shutil.copytree(SOURCE, destination, ignore=ignore)
 
@@ -44,15 +44,209 @@ class InstallTests(unittest.TestCase):
 
     def configure(self, names, source=None):
         source = source or self.source
-        table = (source / "projects/index.example.md").read_text(encoding="utf-8")
-        separator = "| --- | --- | --- | --- | --- |"
-        rows = "\n".join(f"| {name} | fixture | github.example.com/org/repo | ABC | (unset) |"
-                         for name in names)
-        (source / "projects/index.md").write_text(
-            table.replace(separator, separator + "\n" + rows), encoding="utf-8", newline="\n")
-        for name in names:
+        for number, name in enumerate(names):
             (source / "projects" / name).write_text(
-                "Configuration status: READY\nFixture " + name + "\n", encoding="utf-8", newline="\n")
+                f"# Fixture {number}\n\nConfiguration status: READY\n\n## Routing\n\n"
+                f"- Aliases: service{number}, project{number}\n"
+                f"- Git remote: git.test/team/service{number}\n"
+                f"- Jira prefix: ABC{number}\n\n## Connections\n\n"
+                "- GitHub MCP connection: github-fixture\n"
+                "- Jira MCP connection: jira-fixture\n"
+                "- Jira site: https://jira.test\n", encoding="utf-8", newline="\n")
+
+    def test_fresh_clone_and_unconfigured_profiles_do_not_write_source(self):
+        draft = self.source / "projects/draft.md"
+        shutil.copyfile(self.source / "projects/project.example.md", draft)
+        before = {p: p.read_bytes() for p in self.source.rglob("*") if p.is_file()}
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(SETUP.install(self.source, self.home), 0)
+        self.assertIn("No READY projects", output.getvalue())
+        self.assertIn("Skipping UNCONFIGURED profile: draft.md", output.getvalue())
+        projects = self.home / ".copilot/engineering-workflow/projects"
+        self.assertEqual([p.name for p in projects.iterdir()], ["index.md"])
+        self.assertIn("Configuration status: UNCONFIGURED", (projects / "index.md").read_text())
+        self.assertNotIn("Copy", (projects / "index.md").read_text())
+        self.assertEqual(self.install(check=True), 0)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.source.rglob("*") if p.is_file()})
+
+    def test_generated_index_matches_any_number_of_ready_profiles_and_updates(self):
+        self.install()
+        for names in (["sre-api.md"], ["sre-api.md", "portal.md", "navigator.md"],
+                      ["sre-api.md", "portal.md", "navigator.md", *[f"service-{i}.md" for i in range(9)]]):
+            self.configure(names)
+            self.assertFalse((self.source / "projects/index.md").exists())
+            self.assertEqual(self.install(check=True), 1)
+            self.assertEqual(self.install(), 0)
+            installed = self.home / ".copilot/engineering-workflow/projects"
+            self.assertEqual({p.name for p in installed.iterdir()}, {"index.md", *names})
+            index = (installed / "index.md").read_text(encoding="utf-8")
+            expected_rows = [f"| {name} | service{i}, project{i} | git.test/team/service{i} | ABC{i} | unset |"
+                             for i, name in enumerate(names)]
+            self.assertEqual(index.splitlines()[6:], sorted(expected_rows))
+            self.assertNotIn("github-fixture", index)
+            for name in names:
+                self.assertEqual((installed / name).read_bytes(), (self.source / "projects" / name).read_bytes())
+            self.assertEqual(self.install(check=True), 0)
+        profile = self.source / "projects/sre-api.md"
+        profile.write_text(profile.read_text(encoding="utf-8").replace("service0, project0", "api, service"), encoding="utf-8")
+        self.assertEqual(self.install(check=True), 1)
+        self.assertEqual(self.install(), 0)
+        self.assertIn("| sre-api.md | api, service |", (installed / "index.md").read_text())
+        self.assertEqual(self.install(check=True), 0)
+
+    def test_routing_errors_block_install_and_check_before_writes(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        original = profile.read_text(encoding="utf-8")
+        bad = [
+            ("Configuration status: READY", ""),
+            ("Configuration status: READY", "Configuration status: ready"),
+            ("Configuration status: READY", "Configuration status: READY\nConfiguration status: READY"),
+            ("## Routing", "## Routes"),
+            ("## Connections", "## Routing"),
+            ("- Jira prefix: ABC0", ""),
+            ("- Jira prefix: ABC0", "- Jira prefix: abc"),
+            ("- Jira prefix: ABC0", "- Jira prefix: ABC0\n- Jira prefix: ABC1"),
+            ("- Jira prefix: ABC0", "- Jira project: ABC0"),
+            ("- Aliases: service0, project0", "- Aliases: unset"),
+            ("- Aliases: service0, project0", "- Aliases: api,,portal"),
+            ("- Aliases: service0, project0", "- Aliases: api|portal"),
+            ("git.test/team/service0", "https://git.test/team/service0"),
+            ("git.test/team/service0", "git@host:team/service0"),
+            ("git.test/team/service0", "https://user:private-token@git.test/team/service0"),
+            ("git.test/team/service0", "host/../service"),
+            ("git.test/team/service0", "host/team/.git"),
+            ("git.test/team/service0", "host/team/..git"),
+            ("git.test/team/service0", "<GIT-HOST>/<ORG>/<REPOSITORY>"),
+            ("github-fixture", "<github-mcp-connection>"),
+            ("https://jira.test", "https://jira.example.com"),
+            ("- Jira prefix: ABC0", "- Jira prefix: ABC0\n- Local root: relative/path"),
+        ]
+        for old, new in bad:
+            profile.write_text(original.replace(old, new), encoding="utf-8")
+            for check in (False, True):
+                with self.subTest(old=old, new=new, check=check):
+                    with self.assertRaisesRegex(ValueError, "Invalid project profile") as error:
+                        self.install(check=check)
+                    self.assertNotIn("private-token", str(error.exception))
+                    self.assertFalse(self.home.exists())
+        profile.write_text(original.replace("git.test/team/service0", "unset").replace("ABC0", "unset"), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Supply a Git remote or Jira prefix"):
+            self.install()
+
+    def test_duplicate_aliases_and_remote_identities_are_rejected(self):
+        self.configure(["sre-api.md", "portal.md"])
+        first = self.source / "projects/sre-api.md"
+        second = self.source / "projects/portal.md"
+        original = second.read_text(encoding="utf-8")
+        replacements = [("service1, project1", "SERVICE0"),
+                        ("service1, project1", "portal, Portal"),
+                        ("git.test/team/service1", "GIT.TEST/TEAM/SERVICE0.git")]
+        for old, new in replacements:
+            second.write_text(original.replace(old, new), encoding="utf-8")
+            for check in (False, True):
+                with self.assertRaisesRegex(ValueError, "Duplicate"):
+                    self.install(check=check)
+                self.assertFalse(self.home.exists())
+        first.write_text(first.read_text(encoding="utf-8").replace("service0, project0", "caf\u00e9"), encoding="utf-8")
+        second.write_text(original.replace("service1, project1", "cafe\u0301"), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "Duplicate alias"):
+            self.install()
+
+    def test_shared_jira_prefix_and_sparse_git_or_jira_routing(self):
+        self.configure(["sre-api.md", "portal.md"])
+        profile = self.source / "projects/portal.md"
+        original = profile.read_text(encoding="utf-8").replace("ABC1", "ABC0")
+        profile.write_text(original, encoding="utf-8")
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        for remote, prefix in (("unset", "ABC0"), ("git.test/team/service1", "unset")):
+            profile.write_text(original.replace("git.test/team/service1", remote).replace("ABC0", prefix), encoding="utf-8")
+            self.assertEqual(self.install(), 0)
+            self.assertEqual(self.install(check=True), 0)
+
+    def test_optional_absolute_roots_and_title_tokens(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        original = profile.read_text(encoding="utf-8")
+        for root in (r"C:\Work\Service", "/Users/fixture/work/service", "unset"):
+            profile.write_text(original.replace("## Connections", "- Local root: `" + root + "`\n\n## Connections")
+                               + "\nPR title: `[<JIRA-KEY>] <JIRA-SUMMARY>`\n", encoding="utf-8")
+            self.assertEqual(self.install(), 0)
+            self.assertEqual(self.install(check=True), 0)
+            index = self.home / ".copilot/engineering-workflow/projects/index.md"
+            self.assertIn(root.replace("\\", "\\\\"), index.read_text())
+
+    def test_unreadable_profiles_and_linked_sources_fail(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        original_read = Path.read_text
+        def unreadable(path, *args, **kwargs):
+            if path == profile:
+                raise PermissionError("fixture denial")
+            return original_read(path, *args, **kwargs)
+        with patch.object(Path, "read_text", autospec=True, side_effect=unreadable):
+            with self.assertRaisesRegex(ValueError, "fixture denial"):
+                self.install()
+        for relative in ("projects", "projects/sre-api.md"):
+            with patch.object(Path, "is_junction", autospec=True,
+                              side_effect=lambda path: path == self.source / relative):
+                with self.assertRaisesRegex(ValueError, "linked install path"):
+                    self.install()
+        self.assertFalse(self.home.exists())
+
+    def test_reserved_filenames_and_uppercase_extensions_fail(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        for name in ("index.md", "README.md", "profile.MD", "back`tick.md"):
+            renamed = profile.rename(profile.with_name(name))
+            with self.assertRaisesRegex(ValueError, "profile filename"):
+                self.install()
+            renamed.rename(profile)
+        self.assertFalse(self.home.exists())
+
+    def test_profile_rename_and_disable_require_explicit_owned_cleanup(self):
+        self.configure(["sre-api.md"])
+        self.install()
+        installed = self.home / ".copilot/engineering-workflow/projects"
+        (installed / "sre-api.md").write_bytes(b"Installed edit to preserve")
+        neighbor = installed / "unowned.md"
+        neighbor.write_bytes(b"Unowned neighbor")
+        profile = (self.source / "projects/sre-api.md").rename(self.source / "projects/api.md")
+        for name in ("sre-api.md", "api.md"):
+            before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+            for check in (True, False):
+                with self.assertRaisesRegex(ValueError, "removed from source"):
+                    self.install(check=check)
+                self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+            (installed / name).unlink()
+            with self.assertRaisesRegex(ValueError, "removed from source"):
+                self.install()
+            manifest = installed.parent / "install-manifest.json"
+            entries = json.loads(manifest.read_text(encoding="utf-8"))
+            del entries[".copilot/engineering-workflow/projects/" + name]
+            manifest.write_text(json.dumps(entries), encoding="utf-8")
+            self.assertEqual(self.install(), 0)
+            self.assertEqual(self.install(check=True), 0)
+            self.assertEqual(neighbor.read_bytes(), b"Unowned neighbor")
+            profile.write_text(profile.read_text(encoding="utf-8").replace("status: READY", "status: UNCONFIGURED"), encoding="utf-8")
+        self.assertEqual({p.name for p in installed.iterdir()}, {"index.md", "unowned.md"})
+
+    def test_invalid_profile_cli_error_is_actionable_and_read_only(self):
+        self.configure(["sre-api.md"])
+        profile = self.source / "projects/sre-api.md"
+        profile.write_text(profile.read_text(encoding="utf-8").replace("- Jira prefix: ABC0", ""), encoding="utf-8")
+        env = os.environ.copy()
+        env.pop("COPILOT_HOME", None)
+        for option in ([], ["--check"]):
+            result = subprocess.run([sys.executable, str(self.source / "setup.py"),
+                                     "--home", str(self.home), *option], cwd=self.root,
+                                    env=env, capture_output=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn(b"sre-api.md", result.stderr)
+            self.assertIn(b"Routing requires", result.stderr)
+            self.assertFalse(self.home.exists())
 
     def test_install_is_repeatable_and_preserves_unrelated_configuration(self):
         copilot = self.home / ".copilot"
@@ -72,7 +266,7 @@ class InstallTests(unittest.TestCase):
             ".copilot/instructions/other.instructions.md": b"Other defaults",
             ".copilot/settings.json": b"Existing settings",
             ".vscode/settings.json": b"Editor configuration",
-            ".copilot/personal-workflow/unrelated.md": b"Unowned legacy neighbor",
+            ".copilot/other-workflow/unrelated.md": b"Unowned neighbor",
         }
         for relative, data in preserved.items():
             path = self.home / relative
@@ -122,151 +316,6 @@ class InstallTests(unittest.TestCase):
                 self.install(check=check)
             self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
 
-    def test_new_planning_files_upgrade_an_existing_install(self):
-        source = self.root / "private clone"
-        copy_source(source)
-        additions = {
-            "skills/planning/SKILL.md": ".copilot/skills/planning/SKILL.md",
-            "writing/examples/plan.md": ".copilot/engineering-workflow/writing/examples/plan.md",
-        }
-        for relative in additions:
-            (source / relative).unlink()
-        self.assertEqual(self.install(source), 0)
-        for relative, destination in additions.items():
-            self.assertFalse((self.home / destination).exists())
-            shutil.copyfile(SOURCE / relative, source / relative)
-        self.assertEqual(self.install(source, check=True), 1)
-        self.assertEqual(self.install(source), 0)
-        self.assertEqual(self.install(source, check=True), 0)
-        installed = self.home / additions["skills/planning/SKILL.md"]
-        self.assertIn("# Planning", installed.read_text(encoding="utf-8"))
-        self.assertNotIn("{{", installed.read_text(encoding="utf-8"))
-        self.assertEqual(
-            (self.home / additions["writing/examples/plan.md"]).read_bytes(),
-            (SOURCE / "writing/examples/plan.md").read_bytes(),
-        )
-        self.assertEqual(
-            list(self.home.rglob("plan.md")),
-            [self.home / additions["writing/examples/plan.md"]],
-        )  # Setup installs a writing example, not a project plan.
-
-    def test_active_projects_and_updates_install_only_referenced_files(self):
-        self.install()  # Upgrade the generated empty state to one real profile.
-        for names in (["sre-api.md"], ["sre-api.md", "portal-ui.md", "reporting.md"]):
-            self.configure(names)
-            (self.source / "projects/unused.md").write_bytes(b"Private unused fixture")
-            self.assertEqual(self.install(check=True), 1)
-            self.assertEqual(self.install(), 0)
-            installed = self.home / ".copilot/engineering-workflow/projects"
-            self.assertEqual({p.name for p in installed.iterdir()}, {"index.md", *names})
-            for name in ("index.md", *names):
-                self.assertEqual((installed / name).read_bytes(),
-                                 (self.source / "projects" / name).read_bytes())
-            self.assertEqual(self.install(check=True), 0)
-        profile = self.source / "projects/sre-api.md"
-        profile.write_bytes(b"Configuration status: UNCONFIGURED\nRevised fixture\n")
-        self.assertEqual(self.install(check=True), 1)
-        self.assertEqual(self.install(), 0)
-        self.assertEqual((installed / profile.name).read_bytes(), profile.read_bytes())
-        self.assertEqual(self.install(check=True), 0)
-
-    def test_fresh_clone_installs_explicit_empty_state_without_writing_source(self):
-        before = {p: p.read_bytes() for p in self.source.rglob("*") if p.is_file()}
-        output = io.StringIO()
-        with redirect_stdout(output):
-            self.assertEqual(SETUP.install(self.source, self.home), 0)
-        self.assertIn("not initialized", output.getvalue())
-        self.assertIn("projects/index.example.md", output.getvalue())
-        projects = self.home / ".copilot/engineering-workflow/projects"
-        self.assertEqual([p.name for p in projects.iterdir()], ["index.md"])
-        self.assertIn("Configuration status: UNCONFIGURED", (projects / "index.md").read_text())
-        self.assertEqual(self.install(check=True), 0)
-        self.assertEqual(before, {p: p.read_bytes() for p in self.source.rglob("*") if p.is_file()})
-
-    def test_empty_local_index_and_duplicate_backtick_references(self):
-        self.configure([])
-        self.assertEqual(self.install(), 0)
-        self.configure(["sre-api.md"])
-        index = self.source / "projects/index.md"
-        index.write_text(index.read_text(encoding="utf-8").replace("| sre-api.md |", "| `sre-api.md` |")
-                         + "\n| sre-api.md | another alias | host/repo | ABC | (unset) |\n",
-                         encoding="utf-8")
-        self.assertEqual(self.install(), 0)
-        self.assertEqual(self.install(check=True), 0)
-        self.assertEqual(len(list((self.home / ".copilot/engineering-workflow/projects").iterdir())), 2)
-
-    def test_invalid_index_or_profile_preflights_before_writes(self):
-        self.configure(["sre-api.md"])
-        index = self.source / "projects/index.md"
-        original = index.read_text(encoding="utf-8")
-        invalid = ["../outside.md", "sub/profile.md", "/absolute.md", "C:/outside.md",
-                   r"..\outside.md", "project.example.md", "PROJECT.EXAMPLE.md", "index.md",
-                   "README.md", "CON.md", "file:stream.md", "profile.MD", "absent.md",
-                   "SRE-API.md", "[profile](sre-api.md)"]
-        for reference in invalid:
-            index.write_text(original.replace("| sre-api.md |", "| " + reference + " |"), encoding="utf-8")
-            for check in (True, False):
-                with self.subTest(reference=reference, check=check):
-                    with self.assertRaisesRegex(ValueError, "Invalid project configuration"):
-                        self.install(check=check)
-                    self.assertFalse(self.home.exists())
-        for malformed in ("", "# No table\n", original.replace("| Profile |", "| File |"),
-                          original.replace("| sre-api.md |", "| sre-api.md | extra |"),
-                          original.replace("| sre-api.md |", "sre-api.md |"),
-                          original.replace("| --- | --- | --- | --- | --- |", "| --- |"),
-                          original + "\n| broken row\n"):
-            index.write_text(malformed, encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "Invalid project configuration"):
-                self.install()
-            self.assertFalse(self.home.exists())
-
-    def test_unreadable_index_and_linked_source_are_not_unconfigured_fallbacks(self):
-        self.configure(["sre-api.md"])
-        index = self.source / "projects/index.md"
-        original = SETUP.render
-        def unreadable(path, root):
-            if path == index:
-                raise PermissionError("fixture denial")
-            return original(path, root)
-        with patch.object(SETUP, "render", side_effect=unreadable):
-            with self.assertRaisesRegex(ValueError, "fixture denial"):
-                self.install()
-        for relative in ("projects", "projects/index.md", "projects/sre-api.md"):
-            with patch.object(Path, "is_junction", autospec=True,
-                              side_effect=lambda path: path == self.source / relative):
-                with self.assertRaisesRegex(ValueError, "linked install path"):
-                    self.install()
-        self.assertFalse(self.home.exists())
-
-    def test_profile_rename_and_removal_require_explicit_owned_cleanup(self):
-        self.configure(["sre-api.md"])
-        self.install()
-        installed = self.home / ".copilot/engineering-workflow/projects"
-        old = installed / "sre-api.md"
-        old.write_bytes(b"Installed edit to preserve")
-        neighbor = installed / "unowned.md"
-        neighbor.write_bytes(b"Unowned neighbor")
-        self.configure(["portal-ui.md"])
-        for obsolete in ("sre-api.md", "portal-ui.md"):
-            before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
-            for check in (True, False):
-                with self.assertRaisesRegex(ValueError, "removed from source"):
-                    self.install(check=check)
-                self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
-            (installed / obsolete).unlink()
-            # Even an already removed file still needs its manifest entry handled.
-            with self.assertRaisesRegex(ValueError, "removed from source"):
-                self.install()
-            manifest = installed.parent / "install-manifest.json"
-            entries = json.loads(manifest.read_text(encoding="utf-8"))
-            del entries[".copilot/engineering-workflow/projects/" + obsolete]
-            manifest.write_text(json.dumps(entries), encoding="utf-8")
-            self.assertEqual(self.install(), 0)
-            self.assertEqual(self.install(check=True), 0)
-            self.assertEqual(neighbor.read_bytes(), b"Unowned neighbor")
-            # Missing source index after configuration selects empty state,
-            # but may not silently discard the previously owned profile.
-            (self.source / "projects/index.md").unlink(missing_ok=True)
 
     def test_installed_index_and_profile_edits_block_updates(self):
         self.configure(["sre-api.md"])
@@ -280,14 +329,6 @@ class InstallTests(unittest.TestCase):
                     self.install(check=check)
             target.write_bytes(original)
 
-    def test_profile_case_aliases_are_rejected_before_writes(self):
-        self.configure(["sre-api.md"])
-        index = self.source / "projects/index.md"
-        index.write_text(index.read_text(encoding="utf-8")
-                         + "\n| SRE-API.md | alias | host/repo | ABC | (unset) |\n", encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "collide across platforms"):
-            self.install()
-        self.assertFalse(self.home.exists())
 
     def test_portable_profile_names_and_bom_newlines(self):
         names = ["service_2.md", "my service.md", "caf\u00e9.md"]
@@ -303,19 +344,6 @@ class InstallTests(unittest.TestCase):
             self.assertFalse(actual.startswith(b"\xef\xbb\xbf"))
             self.assertNotIn(b"\r", actual)
 
-    def test_invalid_project_configuration_cli_returns_actionable_error(self):
-        self.configure(["sre-api.md"])
-        (self.source / "projects/sre-api.md").unlink()
-        env = os.environ.copy()
-        env.pop("COPILOT_HOME", None)
-        for option in ([], ["--check"]):
-            result = subprocess.run([sys.executable, str(self.source / "setup.py"),
-                                     "--home", str(self.home), *option], cwd=self.root,
-                                    env=env, capture_output=True)
-            self.assertEqual(result.returncode, 2)
-            self.assertIn(b"sre-api.md", result.stderr)
-            self.assertIn(b"create it from project.example.md or correct the index row", result.stderr)
-            self.assertFalse(self.home.exists())
 
     def test_git_ignores_local_configuration_and_pull_preserves_it(self):
         upstream = self.root / "upstream"
@@ -331,14 +359,14 @@ class InstallTests(unittest.TestCase):
         git(upstream, "commit", "-m", "Generic distribution fixture")
         clone = self.root / "local clone"
         git(self.root, "clone", str(upstream), str(clone))
-        ignored = ["projects/index.md", "projects/foo.md", "projects/sre-api.md", "projects/my-project.md"]
+        ignored = ["projects/foo.md", "projects/sre-api.md", "projects/my-project.md", "projects/draft.MD"]
         for relative in ignored:
             (clone / relative).write_bytes(b"Private local fixture")
-        paths = ignored + ["projects/index.example.md", "projects/project.example.md", "projects/docs/guide.md"]
+        paths = ignored + ["projects/project.example.md", "projects/docs/guide.md"]
         result = git(clone, "check-ignore", "--no-index", *paths).decode().splitlines()
         self.assertEqual(result, ignored)
         tracked = git(clone, "ls-files", "projects").decode().splitlines()
-        self.assertEqual(tracked, ["projects/index.example.md", "projects/project.example.md"])
+        self.assertEqual(tracked, ["projects/project.example.md"])
         self.assertEqual(git(clone, "status", "--porcelain"), b"")
         (upstream / "projects/project.example.md").write_bytes(b"Updated generic template\n")
         git(upstream, "add", ".")
@@ -349,64 +377,6 @@ class InstallTests(unittest.TestCase):
         self.assertEqual((clone / "projects/project.example.md").read_bytes(), b"Updated generic template\n")
         self.assertEqual(git(clone, "status", "--porcelain"), b"")
 
-    def test_legacy_migration_preserves_ownership_and_requires_explicit_cleanup(self):
-        # Recreate the preceding installer's destination contract, independent of
-        # the new path builder. Existing same-name skill ownership must survive.
-        legacy_files = {
-            ".copilot/copilot-instructions.md": b"Old baseline",
-            ".copilot/personal-workflow/baseline.md": b"Old baseline",
-            ".copilot/personal-workflow/app-instructions.md": b"Old baseline",
-            ".copilot/instructions/personal-workflow.instructions.md": b"Old bridge",
-            ".copilot/personal-workflow/projects/index.md": b"Old index",
-            ".copilot/skills/prepare-pr/SKILL.md": b"Old owned skill",
-        }
-        for relative, data in legacy_files.items():
-            path = self.home / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(data)
-        entries = {p: SETUP.digest(b) for p, b in legacy_files.items()}
-        legacy = self.home / ".copilot/personal-workflow/install-manifest.json"
-        legacy.write_text(json.dumps(entries), encoding="utf-8")
-        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
-        for check in (True, False):
-            with self.assertRaisesRegex(ValueError, "Legacy ownership manifest"):
-                self.install(check=check)
-            self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
-        manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
-        manifest.parent.mkdir()
-        manifest.write_bytes(b"{}")
-        with self.assertRaisesRegex(ValueError, "If both exist"):
-            self.install()
-        self.assertEqual(manifest.read_bytes(), b"{}")
-        manifest.unlink()
-        legacy.rename(manifest)  # Simulate the documented maintainer migration.
-        with self.assertRaisesRegex(ValueError, "removed from source"):
-            self.install()
-        obsolete = set(entries) - {".copilot/copilot-instructions.md", ".copilot/skills/prepare-pr/SKILL.md"}
-        # A local edit to an obsolete file is retained until the user handles it.
-        edited = self.home / ".copilot/personal-workflow/baseline.md"
-        edited.write_bytes(b"Preserve these local notes")
-        with self.assertRaisesRegex(ValueError, "removed from source"):
-            self.install()
-        self.assertEqual(edited.read_bytes(), b"Preserve these local notes")
-        for relative in obsolete:
-            (self.home / relative).unlink()
-            del entries[relative]
-        manifest.write_text(json.dumps(entries), encoding="utf-8")
-        self.assertEqual(self.install(check=True), 1)
-        self.assertEqual(self.install(), 0)
-        self.assertEqual(self.install(check=True), 0)
-        self.assertFalse((self.home / ".copilot/instructions/personal-workflow.instructions.md").exists())
-        self.assertTrue((self.home / ".copilot/instructions/engineering-workflow.instructions.md").exists())
-
-    def test_unrecorded_legacy_bridge_blocks_duplicate_activation(self):
-        legacy = self.home / ".copilot/instructions/personal-workflow.instructions.md"
-        legacy.parent.mkdir(parents=True)
-        legacy.write_bytes(b"Unrecorded old bridge")
-        with self.assertRaisesRegex(ValueError, "no ownership record"):
-            self.install()
-        self.assertEqual(legacy.read_bytes(), b"Unrecorded old bridge")
-        self.assertFalse((self.home / ".copilot/copilot-instructions.md").exists())
 
     def test_canonical_update_and_new_example_are_installed(self):
         source = self.root / "private clone"
@@ -451,12 +421,9 @@ class InstallTests(unittest.TestCase):
         self.assertIn(root.as_posix() + "/projects/index.md", skill)
         self.assertNotIn("{{WORKFLOW_ROOT}}", skill)
         baseline = self.home / ".copilot/copilot-instructions.md"
-        self.assertFalse((root / "baseline.md").exists())
-        self.assertFalse((root / "app-instructions.md").exists())
         adapter = (self.home / ".copilot/instructions/engineering-workflow.instructions.md").read_text(encoding="utf-8")
         self.assertTrue(adapter.startswith('---\napplyTo: "**"\n---\n'))
         self.assertIn(baseline.as_posix(), adapter)
-        self.assertFalse((root / "vscode-settings.json").exists())
         self.assertFalse((root / "README.md").exists())
         self.assertFalse((root / "DESIGN.md").exists())
         review = self.home / ".copilot/skills/implementation-review/SKILL.md"
@@ -523,7 +490,7 @@ class InstallTests(unittest.TestCase):
 
     def test_colliding_sources_fail_before_writes_on_every_os(self):
         # Simulate a case-sensitive source checkout on either host filesystem.
-        source = self.root / "private clone"
+        source = self.source
         for first, second in (("prepare-pr", "PREPARE-PR"), ("caf\u00e9", "cafe\u0301")):
             with self.subTest(first=first, second=second):
                 with patch.object(Path, "rglob", autospec=True) as glob:
@@ -577,23 +544,6 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(self.install(source), 0)
         self.assertEqual(self.install(source, check=True), 0)
 
-    def test_legacy_vscode_adapter_requires_explicit_cleanup(self):
-        self.install()
-        root = self.home / ".copilot/engineering-workflow"
-        legacy = root / "vscode-settings.json"
-        legacy.write_bytes(b"{}\n")
-        manifest = root / "install-manifest.json"
-        entries = json.loads(manifest.read_text(encoding="utf-8"))
-        relative = legacy.relative_to(self.home).as_posix()
-        entries[relative] = SETUP.digest(legacy.read_bytes())
-        manifest.write_text(json.dumps(entries), encoding="utf-8")
-        with self.assertRaisesRegex(ValueError, "removed from source"):
-            self.install()
-        self.assertEqual(legacy.read_bytes(), b"{}\n")
-        legacy.unlink()
-        del entries[relative]
-        manifest.write_text(json.dumps(entries), encoding="utf-8")
-        self.assertEqual(self.install(), 0)
 
     def test_cli_works_from_another_directory_without_a_shell(self):
         env = os.environ.copy()

@@ -12,15 +12,15 @@ Own the outcome from rough requirement to a verified created issue. A draft-only
 1. Read `{{BASELINE_PATH}}` if its full text is absent from the visible context (read it if unsure); its External-action policy owns authorization. Read `{{WORKFLOW_ROOT}}/projects/index.md` and only the selected profile. An explicit story target can differ from the checkout; never use another project's code as evidence. UNCONFIGURED profiles permit illustrative drafts only.
 2. Match the profile's Jira MCP connection, site, and project to connection metadata or read results. Inspect the actual tool schemas; do not assume tool names. Use this existing MCP directly. If unavailable, report the gap and produce a provisional draft when useful; never substitute another Jira site or a shell write.
 3. Inspect supplied requirements/issues and relevant code or related issues when they can resolve ambiguity or reveal a duplicate. Separate requested behavior, evidenced obligations, choices, assumptions, and suggestions. Code does not establish intent, and Jira wording does not prescribe architecture. For consequential contract changes, inspect available consumers and rollout constraints. Ask only unresolved decisions that affect the story.
-4. Read Story create metadata and required fields. If a board is specified, check its filter when accessible: issues belong to projects, and board inclusion follows the filter. Do not invent a board field, estimates, labels, sprint, acceptance criteria, or operational requirements.
+4. Read create metadata and required fields for the project's story issue type (default Story). Resolve its ID live. If a board is specified, check its filter when accessible: issues belong to projects, and board inclusion follows the filter. Do not invent a board field, estimates, labels, sprint, acceptance criteria, or operational requirements.
 
 ## Draft and revise
 
-Read `{{WORKFLOW_ROOT}}/writing/style.md` and its Jira example file if present. Follow the selected profile's story format. Describe the problem, requested behavior, and observable acceptance criteria; keep speculative solutions and unresolved decisions outside the issue body.
+Read `{{WORKFLOW_ROOT}}/writing/style.md` and its Jira example if present; apply the style's artifact-requirements rule, including any project-specific acceptance-criteria convention. Describe the confirmed need and behavior; keep speculative solutions and unresolved decisions outside the issue body.
 
 Show one complete proposed action:
 
-- Operation: create one story; Jira connection/site, project, issue type, and intended board.
+- Operation: create one story; Jira connection/site, project, issue type, and intended board if specified.
 - Full title and description, including every acceptance criterion.
 - All other fields to send, with names and IDs where required; distinguish explicit empty values from server defaults.
 - Duplicate candidates, unresolved questions, and uncertain board inclusion outside the payload.

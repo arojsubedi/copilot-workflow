@@ -10,7 +10,7 @@ import argparse
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import sys
 import tempfile
@@ -30,83 +30,98 @@ def render(source, root):
     ).encode("utf-8")
 
 
-PROJECT_HEADER = [
-    "Profile", "Explicit names / aliases", "Git host and repository",
-    "Jira prefix hint", "Optional exact local root",
-]
-UNCONFIGURED_INDEX = b"""# Project selection
+def read_routing(text):
+    """Parse one fixed bullet section; the rest of a profile stays free Markdown."""
+    sections = text.split("\n## Routing\n")
+    if len(sections) != 2:
+        raise ValueError("Expected one '## Routing' section; use project.example.md")
+    routing = {}
+    for line in sections[1].splitlines():
+        if line.startswith("#"):
+            break
+        if not line.strip():
+            continue
+        match = re.fullmatch(r"- (Aliases|Git remote|Jira prefix|Local root): (.+)", line)
+        if not match or match[1] in routing:
+            raise ValueError("Routing needs unique labeled bullets: Aliases, Git remote, Jira prefix, optional Local root")
+        value = match[2].strip()
+        if value.startswith("`") and value.endswith("`"):
+            value = value[1:-1]
+        if not value or re.search(r"[<>|`\x00-\x1f]", value):
+            raise ValueError("Invalid or placeholder routing value for " + match[1])
+        routing[match[1]] = value
+    if not {"Aliases", "Git remote", "Jira prefix"} <= routing.keys():
+        raise ValueError("Routing requires Aliases, Git remote and Jira prefix (use unset where inapplicable)")
+    return routing
 
-Configuration status: UNCONFIGURED
 
-No projects are configured. Project-dependent actions are blocked; unrelated
-local work and illustrative drafts may continue. Do not infer a project or
-contact example hosts. Never load project templates as runtime context.
-
-Create projects/index.md from projects/index.example.md in the source clone,
-copy projects/project.example.md to projects/<name>.md, fill in verified facts,
-add its row to the index, and rerun setup and --check. Do not edit this generated
-installed index.
-"""
-
-
-def project_files(source, root):
-    """Read the index's one five-column table; package only its named profiles.
-
-    This deliberately accepts plain filenames or single-backtick filenames,
-    not arbitrary Markdown links, nested paths, or a general Markdown grammar.
-    """
-    projects = source / "projects"
-    index = safe_target(source.resolve(), "projects/index.md")
+def project_files(source):
+    """Generate compact routing from READY local profiles; never write source."""
+    projects = safe_target(source.resolve(), "projects")
     destination = ".copilot/engineering-workflow/projects/"
-    if not index.exists():
-        print("Project configuration is not initialized. Using an empty UNCONFIGURED index.\n"
-              "Copy projects/index.example.md to projects/index.md and "
-              "projects/project.example.md to projects/<name>.md; "
-              "edit both, then rerun setup and --check.")
-        return {destination + "index.md": UNCONFIGURED_INDEX}
-    try:
-        data = render(index, root)
-        rows = [line.strip() for line in data.decode("utf-8").splitlines()
-                if line.lstrip().startswith("|")
-                or re.match(r"\s*`?[^|`]+\.md`?\s*\|", line)]
-        cells = [row[1:-1].split("|") for row in rows
-                 if row.startswith("|") and row.endswith("|")]
-        cells = [[cell.strip() for cell in row] for row in cells]
-        if (len(cells) != len(rows) or len(cells) < 2
-                or cells[0] != PROJECT_HEADER
-                or len(cells[1]) != len(PROJECT_HEADER)
-                or any(re.fullmatch(r":?-{3,}:?", cell) is None for cell in cells[1])):
-            raise ValueError("Expected the single five-column Profile table from index.example.md")
-        files = {destination + "index.md": data}
-        seen = {}
-        source_names = {unicodedata.normalize("NFC", p.name) for p in projects.iterdir()}
-        for row in cells[2:]:
-            if len(row) != len(PROJECT_HEADER):
-                raise ValueError("Each profile row must have five cells and leading/trailing pipes")
-            name = row[0]
-            if name.startswith("`") and name.endswith("`"):
-                name = name[1:-1]
-            if (not name.endswith(".md") or "/" in name or "\\" in name or "`" in name
-                    or name.casefold() in ("index.md", "readme.md")
-                    or name.casefold().endswith(".example.md")):
-                raise ValueError("Invalid profile reference: " + name
-                                 + "; use a .md filename directly under projects/, not a template")
-            path = safe_target(source.resolve(), "projects/" + name)
-            key = unicodedata.normalize("NFC", name).casefold()
-            if key in seen and seen[key] != name:
-                raise ValueError("Profile references collide across platforms: " + name)
-            seen[key] = name
-            # Enforce case spelling; macOS may decompose Unicode filenames.
-            if not path.is_file() or unicodedata.normalize("NFC", name) not in source_names:
-                raise ValueError("Referenced profile is missing (check exact filename): " + name
-                                 + "; create it from project.example.md or correct the index row")
-            if destination + name not in files:
-                files[destination + name] = render(path, root)
-        if len(files) == 1:
-            print("Project index has no profiles; project-dependent actions remain unconfigured.")
-        return files
-    except (OSError, ValueError) as error:
-        raise ValueError("Invalid project configuration in " + str(index) + ": " + str(error)) from error
+    files, rows, identities = {}, [], {}
+    for path in sorted(projects.iterdir()):
+        if path.suffix.lower() != ".md" or path.name.lower().endswith(".example.md"):
+            continue
+        try:
+            safe_target(source.resolve(), "projects/" + path.name)
+            if (path.suffix != ".md" or path.name.casefold() in ("index.md", "readme.md")
+                    or "`" in path.name):
+                raise ValueError("Use a .md profile filename; index.md and README.md are reserved")
+            text = path.read_text(encoding="utf-8-sig")
+            statuses = re.findall(r"^Configuration status: (.*)$", text, re.MULTILINE)
+            if len(statuses) != 1 or statuses[0] not in ("READY", "UNCONFIGURED"):
+                raise ValueError("Expected one 'Configuration status: READY' or 'Configuration status: UNCONFIGURED'")
+            if statuses[0] == "UNCONFIGURED":
+                print("Skipping UNCONFIGURED profile: " + path.name)
+                continue
+            # Title-format tokens are conventions, not unfinished identity fields.
+            placeholders = set(re.findall(r"<([A-Za-z][A-Za-z0-9_-]*)>", text)) - {"JIRA-KEY", "JIRA-SUMMARY", "SUMMARY"}
+            if placeholders or re.search(r"\bexample\.(com|org|net)\b|\.invalid\b", text, re.IGNORECASE):
+                raise ValueError("READY profile contains template placeholders; replace them or mark UNCONFIGURED")
+            routing = read_routing(text)
+            aliases = [alias.strip() for alias in routing["Aliases"].split(",")]
+            if any(not alias or alias.casefold() == "unset" for alias in aliases):
+                raise ValueError("Supply at least one nonempty alias; separate aliases with commas")
+            remote, prefix = routing["Git remote"], routing["Jira prefix"]
+            if remote != "unset":
+                if (not re.fullmatch(r"[A-Za-z0-9.-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", remote)
+                        or any(part in (".", "..") for part in remote.split("/"))):
+                    raise ValueError("Git remote must be host/owner/repository, without scheme or credentials")
+                remote = remote.lower().removesuffix(".git")
+                if remote.rsplit("/", 1)[1] in ("", ".", ".."):
+                    raise ValueError("Git remote needs a repository name")
+            if prefix != "unset" and not re.fullmatch(r"[A-Z][A-Z0-9_]*", prefix):
+                raise ValueError("Jira prefix must be an uppercase project key or unset")
+            if remote == prefix == "unset":
+                raise ValueError("Supply a Git remote or Jira prefix to identify the project")
+            local_root = routing.get("Local root", "unset")
+            if local_root != "unset" and not (PureWindowsPath(local_root).is_absolute()
+                                             or PurePosixPath(local_root).is_absolute()):
+                raise ValueError("Local root must be an absolute Windows/macOS Git root or unset")
+            # Prefixes can be shared by several repos; they are cross-checks only.
+            keys = [("alias", alias) for alias in aliases]
+            if remote != "unset":
+                keys.append(("Git remote", remote))
+            for kind, value in keys:
+                key = (kind, unicodedata.normalize("NFC", value).casefold())
+                if key in identities:
+                    raise ValueError("Duplicate " + kind + " in " + identities[key] + " and " + path.name)
+                identities[key] = path.name
+            cells = [path.name, ", ".join(aliases), remote, prefix, local_root]
+            rows.append("| " + " | ".join(cell.replace("\\", "\\\\") for cell in cells) + " |")
+            files[destination + path.name] = text.encode("utf-8")
+        except (OSError, ValueError) as error:
+            raise ValueError("Invalid project profile " + str(path) + ": " + str(error)) from error
+    index = "# Project routing\n\nGenerated by setup.py. Do not edit.\n\n"
+    if rows:
+        index += ("| Profile | Aliases | Git remote | Jira prefix | Local root |\n"
+                  "| --- | --- | --- | --- | --- |\n" + "\n".join(rows) + "\n")
+    else:
+        index += "Configuration status: UNCONFIGURED\n\nNo READY projects.\n"
+        print("No READY projects. Configure projects/<name>.md from project.example.md and rerun setup.")
+    files[destination + "index.md"] = index.encode("utf-8")
+    return files
 
 
 def build_files(source, home):
@@ -126,7 +141,7 @@ def build_files(source, home):
             'read this file before proceeding. If unsure, read it; report access failures.\n'
         ).encode("utf-8"),
     }
-    files.update(project_files(source, root))
+    files.update(project_files(source))
     for path in sorted((source / "writing").rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source).as_posix()
         files[".copilot/engineering-workflow/" + relative] = render(path, root)
@@ -208,16 +223,6 @@ def install(source, home, check=False):
     home = home.expanduser().resolve()
     files = build_files(source, home)
     manifest = safe_target(home, ".copilot/engineering-workflow/install-manifest.json")
-    legacy_manifest = safe_target(home, ".copilot/personal-workflow/install-manifest.json")
-    if legacy_manifest.exists():
-        raise ValueError(
-            "No files changed. Legacy ownership manifest found: " + str(legacy_manifest)
-            + "\nFollow docs/setup.md migration: back up the recorded files and manifest; "
-            "relocate this manifest to " + str(manifest)
-            + " only if that destination is absent. If both exist, reconcile their "
-            "ownership records first; never overwrite either blindly. Then run --check "
-            "and explicitly clean up the listed obsolete files and entries."
-        )
     previous = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else {}
     if not isinstance(previous, dict) or any(
         not isinstance(k, str) or not isinstance(v, str)
@@ -244,24 +249,20 @@ def install(source, home, check=False):
         if actual is not None and digest(actual) != previous.get(relative):
             conflicts.append(str(target) + " has existing or locally edited content")
     removed = set(previous) - set(files)
-    legacy_bridge = ".copilot/instructions/personal-workflow.instructions.md"
-    if legacy_bridge not in previous and safe_target(home, legacy_bridge).exists():
-        conflicts.append("Legacy instruction bridge has no ownership record: " + legacy_bridge
-                         + "; inspect, back up and remove it before installing its replacement")
     if removed:
         conflicts.append("Previously installed files removed from source; review and remove "
                          "them locally, then remove their manifest entries: "
                          + ", ".join(sorted(removed)))
     if conflicts:
         raise ValueError("No files changed.\n" + "\n".join(conflicts)
-                         + "\nMerge wanted content into the private source first. "
+                         + "\nMerge wanted content into the source first. "
                          "Back up and remove conflicting installed files, then rerun setup.")
     if check:
         if outdated or manifest_outdated:
             print("Installation differs from source: "
                   + ", ".join(outdated + (["manifest"] if manifest_outdated else [])))
             return 1
-        print("Installed files match the private source. App UI settings are not inspectable by setup.")
+        print("Installed files match the source. App UI settings are not inspectable by setup.")
         return 0
 
     for relative in outdated:

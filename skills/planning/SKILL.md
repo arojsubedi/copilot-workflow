@@ -17,39 +17,11 @@ Resolve routine choices from evidence. When alternatives materially change behav
 
 ## Choose one artifact
 
-Use the user's explicit destination first.
+Use the user's explicit destination first. Otherwise resolve the intended work repository with `git rev-parse --show-toplevel` and use `<repository-root>/plan.md`. This is a first-class artifact in that repository; setup does not manage it.
 
-Otherwise, store the plan as:
+Confirm the target before writing. Inspect an existing plan and reuse it only for the current effort. Preserve unrelated plans and concurrent edits; ask for another concrete destination when the path is occupied by unrelated work or the Git root cannot be resolved. An in-chat draft may continue, but do not claim it is persisted.
 
-`<repository-root>/plan.md`
-
-Resolve the target repository root from the confirmed working tree with:
-
-`git rev-parse --show-toplevel`
-
-Then use:
-
-`<resolved-root>/plan.md`
-
-Do not place the default plan under `.git`, Git metadata, the shared workflow repository, the installed Copilot configuration, or another repository.
-
-The repository root is the default because `plan.md` is a first-class implementation artifact for the current change and should be easy for the user and implementation workflow to find and read.
-
-Before writing:
-
-- confirm the resolved repository is the intended target
-- inspect an existing `plan.md` if present
-- reuse it only when it clearly belongs to the same current planning effort
-- never overwrite an unrelated plan or concurrent user edits
-- if an unrelated `plan.md` already exists, stop and ask for a different destination rather than inventing a filename
-
-The plan is not automatically committed or published merely because it lives in the repository root. Planning authorizes writing/updating the local `plan.md` artifact only. Git staging, commit, push, PR creation, or other publication remains separately authorized.
-
-If Git root resolution is unavailable, explain the limitation and ask for a concrete destination. An in-chat draft can continue meanwhile, but do not claim it has been persisted.
-
-Report the resolved repository and `plan.md` path during handoff.
-
-References inside the plan should remain repository-relative.
+Keep references inside the plan repository-relative. Report its resolved path and repository at handoff. Writing the plan does not stage, commit, or publish it.
 
 ## Write the current proposal
 

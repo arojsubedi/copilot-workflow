@@ -1,77 +1,49 @@
 # Engineering workflow for Copilot
 
-A reusable engineering workflow for GitHub Copilot on Windows and macOS. It supplies engineering defaults, five task skills, project templates, and writing guidance outside company repositories. Your ignored local source profiles are canonical; files installed under your home are generated.
+Engineering defaults, five task skills, private project context, and writing calibration for local GitHub Copilot sessions on Windows and macOS. Work repositories keep their own guidance and tooling. This clone is the editable source; installed files are generated.
 
-The opinion: **understand before editing, challenge unsupported assumptions, change the owning layer, and claim only what the evidence supports.** Use the minimum sufficient machinery that preserves behavior and real contracts.
+## Configure and install
 
-```text
-Engineering defaults (user scope, when loaded by the active surface)
-                         +
-Applicable repository guidance / AGENTS.md
-                         +
-Relevant task skill, with project and writing context when needed
-                         +
-Inspected repository code and live MCP evidence
-```
+Python 3.12+ is the only installer dependency.
 
-This describes how context contributes, not a precedence ladder. Instructions guide decisions; `AGENTS.md` is repository-owned agent guidance; skills are procedures selected for a task. Skill names/descriptions are discoverable before their bodies are loaded. Profiles select private identity and conventions. MCP tools provide live evidence and separately approved actions.
-
-| Layer | Question it owns | Source |
-| --- | --- | --- |
-| Engineering defaults | How should Copilot reason and decide? | [Baseline](instructions/baseline.md) |
-| Repository guidance | What contracts and team rules apply here? | The work repository's instructions, code, tests, tooling |
-| Planning | What current proposal should guide this change? | [Planning](skills/planning/SKILL.md) |
-| Implementation | How should this meaningful change be constructed here? | [Implementation](skills/implementation/SKILL.md) |
-| Implementation-review | Is this pass grounded, correct, proportionate, and verified? | [Implementation review](skills/implementation-review/SKILL.md) |
-| Project profile | Which project, private conventions, and tool routes apply? | Local `projects/index.md` and one profile; [index template](projects/index.example.md) |
-| Writing | How should engineering prose and useful visuals communicate it? | [Writing style](writing/style.md) |
-| External action | What exact consequential action is approved? | [External-action policy](instructions/baseline.md#external-action-policy), plus host permissions |
-
-Normal questions use baseline grounding: trace only evidence that can change the answer, cite useful locations, and answer first. There is no separate tracing or visualization skill in V1. Diagrams and tables present inspected facts when useful; simple answers remain prose. Meaningful implementation uses construction guidance, then bounded self-review, adjustment and verification. Tiny edits need focused checks. [DESIGN.md](DESIGN.md) shows the complete operating model.
-
-**Functional-first implementation:** construct meaningful features to a coherent production state, then reconcile affected tests and add meaningful coverage in a final test/verification phase. Existing checks may run diagnostically during construction, and genuine defects still need correction when discovered. Final verification and review remain required. [Construction procedure](skills/implementation/SKILL.md#functional-first-implementation)
-
-## Install and configure
-
-Python 3.12+ is the only installer dependency. The repository ships two generic project templates. Your real configuration stays local and is ignored by Git:
-
-1. Copy `projects/index.example.md` to `projects/index.md`.
-2. Copy `projects/project.example.md` to a meaningful name such as `projects/sre-api.md`.
-3. Fill in and verify the project facts, then mark the profile READY.
-4. Add its filename and identities as a row in the index table. Repeat for any number of projects.
-5. Run setup and check from this clone:
+1. Copy `projects/project.example.md` to a meaningful local name such as `projects/sre-api.md` using Finder, Explorer, or your editor.
+2. Fill in routing and connection facts, remove inapplicable fields, and verify them before setting `Configuration status: READY`. Repeat for other projects.
+3. Run from this clone:
 
 ```text
 python setup.py
 python setup.py --check
 ```
 
-Use `python3` on macOS if needed. File copies work in Explorer, Finder, or your editor; no shell-specific initialization is required. **Configuration is required before live project use, not before first setup.** Without local `projects/index.md`, setup reports the gap and installs an empty UNCONFIGURED index for inspection. It never installs project templates. `--check` can pass for that state; it verifies installation consistency, not project readiness.
+Use `python3` on macOS if needed. Real profiles are ignored by Git. Setup scans them and generates the routing index; there is no index to maintain. Without READY profiles, setup installs an explicitly unconfigured index for inspection and unrelated local work.
 
-Setup installs the active index and only its referenced profiles. Edit these files in source and rerun setup; do not edit installed copies under `~/.copilot/`. Workflow updates leave ignored configuration untouched. Incorporate relevant template improvements manually, and transfer local configuration separately if using multiple machines. Profiles hold identity/convention facts, never credentials. Existing users should follow the [tracked-profile migration](docs/setup.md#migration-from-tracked-project-profiles) before pulling this change.
+Setup installs:
 
-Setup renders `instructions/baseline.md` into one full baseline, `~/.copilot/copilot-instructions.md`. CLI discovers that file. A small `~/.copilot/instructions/engineering-workflow.instructions.md` bridge requests it in VS Code when applicable; inspect the actual read, especially for fileless questions. In the Copilot app, manually paste the full generated baseline into **Settings > Sessions > App instructions**. Setup cannot update that UI field. [Surface behavior and official sources](docs/copilot-compatibility.md)
+- `~/.copilot/copilot-instructions.md`: the full engineering defaults.
+- `~/.copilot/instructions/engineering-workflow.instructions.md`: a VS Code bridge to those defaults.
+- `~/.copilot/skills/`: the five workflow skills.
+- `~/.copilot/engineering-workflow/`: generated project routing/profiles, writing guidance, and the ownership manifest.
 
-Support files and the ownership manifest live under `~/.copilot/engineering-workflow/`; five skills live under `~/.copilot/skills/`. Here `~` means the home Python resolves on your machine. [Exact destinations, onboarding, conflict recovery, and migration](docs/setup.md)
+In the **Copilot app**, paste the full generated `~/.copilot/copilot-instructions.md` into **Settings > Sessions > App instructions**. CLI discovers the baseline file; in VS Code, verify the bridge's actual baseline read, including fileless questions. Setup cannot update the app's UI setting. [Installation and project configuration](docs/setup.md) ? [Surface behavior](docs/copilot-compatibility.md)
 
-## Planning and handoff
+## Everyday use
 
-Ask “Use planning to research this change and write a plan; do not implement yet.” Use it for requested plans and changes whose ambiguity, contracts, sequencing, or risk warrants a durable proposal. Tiny fixes need no plan file; well-understood changes can use a brief internal plan. Multiple files alone do not trigger planning.
+| Task | Procedure |
+| --- | --- |
+| Research a change and converge on a proposal | [planning](skills/planning/SKILL.md) |
+| Construct an authorized change | [implementation](skills/implementation/SKILL.md) |
+| Assess a meaningful implementation pass | [implementation-review](skills/implementation-review/SKILL.md) |
+| Draft or create one Jira story | [jira-story](skills/jira-story/SKILL.md) |
+| Prepare or create a PR | [prepare-pr](skills/prepare-pr/SKILL.md) |
 
-`plan.md` describes the current proposal: problem, relevant current system, approach, coherent steps and verification, with material open questions only while unresolved. Revisions replace superseded content and normalize the whole document. It stays readable after repeated discussion, with no automatic history or ADR archive. [Procedure](skills/planning/SKILL.md) · [Small illustrative example](writing/examples/plan.md)
+Ask for planning when you want a durable proposal. Its default is `<repository-root>/plan.md`; an explicit destination takes priority. [The planning skill](skills/planning/SKILL.md#choose-one-artifact) owns the location and handoff rule. Pass the resolved path and repository to a later session with explicit direction to implement. Accepting a plan alone does not authorize code changes.
 
-An explicit destination or verified repository/profile convention takes priority, including whether the plan belongs in the repository. Otherwise planning resolves a local path with `git rev-parse --path-format=absolute --git-path engineering-workflow/plan.md` from the target checkout. Git handles linked worktrees; the artifact is untracked local metadata, not shared workflow configuration. It is not pushed or synced and can disappear when its worktree is removed. An unrelated plan is never overwritten. Without an available/permitted Git destination, choose a concrete local path; the agent can draft in chat while resolving it.
+Meaningful implementation uses construction guidance, then bounded review and verification. Small clear edits need focused checks. Ordinary repository questions use the [baseline](instructions/baseline.md) directly. Publication follows its [external-action policy](instructions/baseline.md#external-action-policy).
 
-Planning reports the resolved path and repository. Hand those to a later session with “Implement this plan in this repository.” Plan acceptance alone does not authorize code edits. Implementation checks current evidence, resolves routine details, and reconciles consequential invalidation in the same plan before dependent work. Check discovery with CLI `/skills info planning`, app Customize > Skills, or VS Code Agent Customizations; inspect the actual skill read. VS Code `/plan` is its built-in agent, not an alias for this skill, and its session-memory draft is not the durable handoff. [Host distinctions](docs/copilot-compatibility.md#planning-surfaces-and-artifacts)
+## Coexistence and maintenance
 
-## How this combines with an existing Copilot setup
+Setup preserves AGENTS.md, repository instructions, existing MCP/editor settings, and unrelated skills. Different content at one of its exact destinations blocks installation before writes. A same-name skill elsewhere may shadow this workflow; inspect the actual source loaded.
 
-- **Already have AGENTS.md or repository Copilot instructions?** Setup never edits them or any work repository. Applicable instructions coexist. CLI combines them without general precedence; VS Code documents personal > repository > organization priority, with all supplied. Higher priority does not remove repository context. The app's documented settings do not establish an equivalent ordering. [Compatibility](docs/copilot-compatibility.md)
-- **Already have Karpathy or other skills?** Unrelated skills remain untouched. A different skill at our exact destination blocks installation before writes. A same-name skill in another discovery location can shadow ours without a filesystem conflict; inspect its actual source.
-- **Already have `~/.copilot/copilot-instructions.md`?** Different unowned or locally edited content is a conflict, not permission to overwrite. Merge wanted engineering defaults into source, back up the conflicting file, remove only that destination, and rerun. Byte-identical desired content can be adopted. Keep project rules in the work repository.
-- **Where do I edit or update?** Edit the private clone, including `instructions/baseline.md`, `projects/`, and `writing/`; rerun setup and check on each machine. Never hand-maintain installed copies. Refresh the app paste after a baseline change or relocation to another home.
-- **How do I see what loaded?** CLI: `/instructions`, `/skills list`, `/skills info implementation`. App: Customize > Skills and `/skills`. VS Code: Agent Customizations and Chat Diagnostics. Ask for the profile path and evidence actually read; inspect tool calls. Discovery alone does not prove invocation. [Session checks](docs/verification.md)
+Edit this clone, rerun setup and check, refresh the app paste when the baseline changes, and start a fresh session. Transfer ignored profiles separately between machines; Git updates the workflow and template without syncing local project facts. Never edit installed copies or store credentials in profiles.
 
-Existing MCP/editor configuration stays intact. Conversational approval and host tool approval remain separate: exact preview, explicit approval, host gate, execute, read back. No automatic commits, pushes, PRs, custom agents, router, or review swarm. Installer checks establish file state, not model compliance.
-
-Upgrading the old `personal-workflow` layout requires [explicit migration](docs/setup.md#migration-from-personal-workflow) before installation writes anything. [Research decisions](docs/research.md) explain the accepted mechanisms and rejected lifecycle assumptions.
+[Current architecture and owners](DESIGN.md) ? [Conflict recovery](docs/setup.md#update-and-recover) ? [Verification checklist](docs/verification.md)

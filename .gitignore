@@ -8,7 +8,6 @@ Thumbs.db
 *.log
 local/
 
-# Private project configuration stays in source; only these templates ship.
+# Private project configuration stays in source; only the template ships.
 /projects/*.[mM][dD]
-!/projects/index.example.md
 !/projects/project.example.md

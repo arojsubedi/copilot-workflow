@@ -1,5 +1,6 @@
 """Check shipped Markdown references and the installed skill contract."""
 
+import json
 import re
 import tempfile
 import unittest
@@ -70,6 +71,21 @@ class ContentTests(unittest.TestCase):
             for destination, data in files.items():
                 self.assertNotIn(b"{{WORKFLOW_ROOT}}", data, destination)
                 self.assertNotIn(b"{{BASELINE_PATH}}", data, destination)
+
+    def test_mcp_example_is_valid_source_only_reference(self):
+        example = SOURCE / "mcp/mcp.example.json"
+        configuration = json.loads(example.read_text(encoding="utf-8"))
+        self.assertEqual(set(configuration), {"mcpServers"})
+        servers = configuration["mcpServers"]
+        self.assertEqual({server["type"] for server in servers.values()}, {"stdio", "http"})
+        self.assertTrue(all(server.get("tools") for server in servers.values()))
+
+        with tempfile.TemporaryDirectory(prefix="workflow-mcp-test-") as temporary:
+            source = Path(temporary) / "source"
+            home = Path(temporary) / "home"
+            copy_source(source)
+            files = SETUP.build_files(source, home)
+            self.assertFalse(any("mcp.example.json" in relative for relative in files))
 
 
 if __name__ == "__main__":

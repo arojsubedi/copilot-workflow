@@ -46,6 +46,12 @@ class InstallTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             return SETUP.uninstall(self.home)
 
+    def status(self, source=None):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = SETUP.status(source or self.source, self.home)
+        return result, output.getvalue()
+
     def configure(self, names, source=None):
         source = source or self.source
         for number, name in enumerate(names):
@@ -665,6 +671,88 @@ class InstallTests(unittest.TestCase):
 
         self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
 
+    def test_status_reports_not_installed_without_creating_files(self):
+        result, output = self.status()
+        self.assertEqual(result, 0)
+        self.assertIn("Installation: not installed", output)
+        self.assertIn("Manifest: not present", output)
+        self.assertFalse(self.home.exists())
+
+    def test_status_reports_current_without_changing_installed_files(self):
+        self.install()
+        before = {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()}
+        result, output = self.status()
+        self.assertEqual(result, 0)
+        self.assertIn("Installation: current", output)
+        self.assertIn("Engineering defaults: installed", output)
+        self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
+
+    def test_status_reports_safe_update_without_changing_installed_files(self):
+        self.install()
+        baseline = self.source / "instructions/baseline.md"
+        baseline.write_text(
+            baseline.read_text(encoding="utf-8") + "\nUpdated source guidance.\n",
+            encoding="utf-8",
+        )
+        before = {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()}
+        result, output = self.status()
+        self.assertEqual(result, 0)
+        self.assertIn("Installation: safe update available", output)
+        self.assertIn("Engineering defaults: out of date", output)
+        self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
+
+    def test_status_reports_local_conflict_without_changing_installed_files(self):
+        self.install()
+        target = self.home / ".copilot/engineering-workflow/writing/style.md"
+        target.write_text("Locally edited guidance", encoding="utf-8")
+        before = {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()}
+        result, output = self.status()
+        self.assertEqual(result, 0)
+        self.assertIn("Installation: conflict", output)
+        self.assertIn("Writing: conflict", output)
+        self.assertIn("locally edited content", output)
+        self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
+
+    def test_status_reports_ready_projects_dynamically(self):
+        self.configure(["first.md", "second.md"])
+        self.install()
+        result, output = self.status()
+        self.assertEqual(result, 0)
+        self.assertIn("Projects: 2 READY in source", output)
+        self.assertIn("Project 0", output)
+        self.assertIn("Project 1", output)
+
+    def test_status_discovers_skill_inventory_from_source(self):
+        expected = len(list((self.source / "skills").glob("*/SKILL.md"))) + 1
+        skill = self.source / "skills/status-fixture/SKILL.md"
+        skill.parent.mkdir()
+        skill.write_text(
+            "---\nname: status-fixture\ndescription: Fixture used to verify dynamic status discovery.\n---\n\n# Fixture\n",
+            encoding="utf-8",
+        )
+        result, output = self.status()
+        self.assertEqual(result, 0)
+        self.assertIn(f"Skills: {expected} discovered in source", output)
+        self.assertFalse(self.home.exists())
+
+    def test_status_manifest_error_uses_exit_two_without_mutation(self):
+        self.install()
+        manifest = self.home / SETUP.MANIFEST_RELATIVE
+        manifest.write_text("{invalid", encoding="utf-8")
+        before = {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()}
+        env = os.environ.copy()
+        env.pop("COPILOT_HOME", None)
+        result = subprocess.run(
+            [sys.executable, str(self.source / "setup.py"), "--home", str(self.home), "--status"],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"Unable to inspect engineering workflow status", result.stderr)
+        self.assertIn(b"install-manifest.json", result.stderr)
+        self.assertEqual(before, {path: path.read_bytes() for path in self.home.rglob("*") if path.is_file()})
+
     def test_malformed_manifest_blocks_writes(self):
         manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
         manifest.parent.mkdir(parents=True)
@@ -748,6 +836,8 @@ class InstallTests(unittest.TestCase):
         self.assertFalse(self.home.exists())
         self.assertEqual(run().returncode, 0)
         self.assertEqual(run("--check").returncode, 0)
+        self.assertEqual(run("--check", "--status").returncode, 2)
+        self.assertEqual(run("--status", "--uninstall").returncode, 2)
         uninstall = run("--uninstall")
         self.assertEqual(uninstall.returncode, 0)
         self.assertIn(b"clear them manually", uninstall.stdout)

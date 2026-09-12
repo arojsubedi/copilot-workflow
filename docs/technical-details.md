@@ -17,6 +17,8 @@ Setup resolves the selected home through Python and manages these destinations:
 
 Human documentation and `projects/project.example.md` remain source-only. Setup renders workflow and personal-instruction paths into runtime Markdown. Source Markdown accepts UTF-8 with an optional BOM and ordinary platform newlines; installed files use UTF-8 with LF newlines.
 
+The read-only `--status` command uses the same expected-file rendering, manifest loading, hashes, and conflict inspection as install and check. It summarizes that shared inspection for a person but deliberately keeps drift exit semantics in `--check`.
+
 ## Project lookup generation
 
 `setup.py` scans only Markdown files directly under `projects/`, excludes `*.example.md`, and installs profiles marked READY. It reads the `Project`, `Git remote`, `Jira prefix`, and optional `Local root` bullets from the Routing section. The rest of each profile remains free Markdown and is copied without interpreting reviewer or convention semantics.
@@ -53,6 +55,12 @@ This workflow installs personal/user-level instructions. Work repositories may a
 
 The generated `engineering-workflow.instructions.md` adapter points VS Code clients to the shared personal defaults when their full text is not already visible. The Copilot app uses a manual paste into its app-instructions UI because setup cannot edit that setting. Restart or open a fresh session after changes; discovery alone does not prove that a particular file was loaded.
 
+## MCP reference
+
+[`mcp/mcp.example.json`](../mcp/mcp.example.json) is source-only reference material showing the current `mcpServers` shape for one standard-input server and one remote HTTP server. Setup does not install, merge, modify, or claim ownership of MCP configuration.
+
+GitHub Copilot CLI currently stores user-level MCP definitions in `~/.copilot/mcp-config.json`. Manage real servers through Copilot's current MCP commands or configuration tooling, and do not commit credentials to this workflow. See [GitHub's MCP configuration documentation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers).
+
 ## Validation and tests
 
 `python setup.py --check` builds the expected file set and performs the same configuration, path, ownership, and drift preflight without writing. It returns `0` when installed state matches, `1` for safe differences, and `2` for conflicts or invalid input.
@@ -63,6 +71,6 @@ Run the automated suite with:
 python -m unittest discover -s tests -v
 ```
 
-The tests use temporary source copies and homes. They cover READY and UNCONFIGURED profiles, single and multiple projects, project lookup changes, template exclusion, routing validation, reviewer preservation, unrelated-file preservation, ownership conflicts, stale files, interruption recovery, path safety, encoding/newlines, install/check/update/uninstall/reinstall behavior, skill metadata/rendering, and Markdown links. A symlink-specific test can skip when the local account cannot create symlinks.
+The tests use temporary source copies and homes. They cover READY and UNCONFIGURED profiles, single and multiple projects, project lookup changes, template exclusion, routing validation, reviewer preservation, unrelated-file preservation, ownership conflicts, stale files, interruption recovery, path safety, encoding/newlines, install/check/status/update/uninstall/reinstall behavior, dynamic skill discovery, the source-only MCP example, skill metadata/rendering, and Markdown links. A symlink-specific test can skip when the local account cannot create symlinks.
 
 Automated filesystem tests do not establish that a Copilot client loaded the intended instruction, selected the correct project, followed writing calibration, or honored a conversational approval boundary. Verify those behaviors in the clients you actually use by inspecting discovered instructions, selected skills/profile, MCP target, and proposed external action.

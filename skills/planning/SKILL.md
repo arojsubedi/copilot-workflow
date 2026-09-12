@@ -11,6 +11,8 @@ Produce a readable current implementation proposal, then stop at the planning bo
 
 Establish the requested outcome and meaningful scope from the request, supplied issue, applicable repository guidance, and matching profile. Inspect current behavior, its owner, relevant callers, contracts/invariants, tests, and verification commands before proposing steps. Follow dependencies that can change the design, not the entire repository. Compare existing mechanisms' semantics, errors, and side effects before proposing reuse; precedent is evidence, not unquestionable authority.
 
+Treat a user-proposed implementation approach as a candidate to validate against inspected behavior, ownership, contracts, current capabilities, and consequential tradeoffs unless the user explicitly made it a constraint. If evidence materially favors a plausible alternative, compare the consequences and recommend the better-supported direction before committing it to the plan; do not invent alternatives or challenge constraints merely for ceremony.
+
 Use external research when the choice depends on current platform/library capabilities, deprecations, security, compatibility, unfamiliar technology, or a supported mechanism not established locally. Prefer primary sources applicable to the actual versions. Record only conclusions and links that affect the proposal; generic best-practice browsing is not a planning ritual.
 
 Resolve routine choices from evidence. When alternatives materially change behavior, ownership, scope, data handling, security, or rollout, establish the constraint, compare viable consequences, and recommend a direction. Ask only for missing information or consequential decisions that inspection cannot resolve; continue independent research while waiting. Mark material uncertainty explicitly, never invent contracts or consumers. Do not decompose dependent work as settled while its decision remains open.
@@ -58,6 +60,8 @@ The artifact describes the **current proposal, never the history of planning**. 
 Do not append revisions, addenda, corrections, decision logs, or chronological rationale unless explicitly requested. Keep only rationale that prevents a wrong implementation. Ordinary discarded options stay out of the artifact; do not preserve them in an ADR. A separate architectural record needs independent durable value, repository conventions, and its own requested scope.
 
 ## Stop and hand off
+
+Before presenting the plan, make one final evidence-based pass for a missing material risk, consequential tradeoff, materially simpler approach, or important consequence. Surface only something real; do not report an empty check or manufacture a competing design.
 
 Present the current plan with its location, material unresolved decisions, and readiness limits. A first draft is not agreement. Plan acceptance, “looks closer,” research requests, and phase edits do not authorize coding. Ask for or recognize explicit direction to implement; reuse authorization already given when it clearly covers implementation after planning. Without it, stop at the proposal.
 

@@ -50,6 +50,14 @@ If you use the Copilot app, paste the full generated personal instruction file i
 
 For a disposable test destination, use `python setup.py --home <directory>`. That option installs files there but does not make Copilot discover the alternate location.
 
+## Inspect status
+
+Run `python setup.py --status` for a human-readable overview of the source clone, installation location and state, installed guidance, dynamically discovered skills, and READY projects. It also reports that Copilot app instructions are manual because setup cannot inspect whether the app currently loaded them.
+
+Status is read-only and performs no installation, repair, deletion, or manifest update. It returns `0` when it can report the state, including not installed, update available, or local conflict. Invalid or unreadable source configuration or ownership data returns `2`.
+
+Use `--check` for deterministic source-to-install comparison in automation. Check retains its existing exit behavior: `0` for a match, `1` for safe differences, and `2` for invalid data or conflicts. `--status`, `--check`, and `--uninstall` are mutually exclusive; `--home` works with each.
+
 ## Update
 
 Update this source clone or edit its tracked guidance, then rerun:
@@ -84,6 +92,6 @@ A conflict usually means an installed file was edited directly or another workfl
 
 Do not delete whole Copilot configuration directories or edit the ownership record to force an operation. Unrelated instructions, skills, and settings may live beside this workflow.
 
-Exit code `0` means the requested operation completed or the check matched. Check mode uses `1` for differences. Invalid configuration, unsafe paths, conflicts, and I/O failures use `2`.
+For install and uninstall, exit code `0` means the operation completed. Invalid configuration, unsafe paths, conflicts, and I/O failures use `2`.
 
 See [technical details](technical-details.md) for validation rules, installed paths, ownership behavior, and client compatibility.

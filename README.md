@@ -34,6 +34,7 @@ Python 3.12 or newer is the only installer dependency.
 ```text
 python setup.py
 python setup.py --check
+python setup.py --status
 ```
 
 4. If you use the Copilot app, complete its manual app-instructions step described in [the setup guide](docs/setup.md#install-and-check).
@@ -61,7 +62,7 @@ Work repositories can keep their own repository-specific instructions. Avoid dup
 
 ## Updating or removing it
 
-Edit or update this source clone, then run `python setup.py` and `python setup.py --check` again. Start a fresh Copilot session so it sees the updated files.
+Edit or update this source clone, then run `python setup.py` and `python setup.py --check` again. Use `python setup.py --status` whenever you want a readable overview of the source, installation, and configured projects. Start a fresh Copilot session so it sees updated files.
 
 To remove the installed workflow:
 

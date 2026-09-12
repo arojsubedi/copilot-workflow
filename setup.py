@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install, check, or remove engineering workflow context using Python 3.12+ only.
+"""Install, inspect, check, or remove engineering workflow context using Python 3.12+ only.
 
 Source Markdown is canonical; installed bytes are managed by an ownership
 manifest. Preflight precedes all writes. Replacement is atomic per file, not
@@ -57,7 +57,7 @@ def read_routing(text):
     return routing
 
 
-def project_files(source):
+def project_files(source, report=True):
     """Generate compact routing from READY local profiles; never write source."""
     projects = safe_target(source.resolve(), "projects")
     template = safe_target(source.resolve(), "projects/project.example.md").read_text(encoding="utf-8-sig")
@@ -77,7 +77,8 @@ def project_files(source):
             if len(statuses) != 1 or statuses[0] not in ("READY", "UNCONFIGURED"):
                 raise ValueError("Expected one 'Configuration status: READY' or 'Configuration status: UNCONFIGURED'")
             if statuses[0] == "UNCONFIGURED":
-                print("Skipping UNCONFIGURED profile: " + path.name)
+                if report:
+                    print("Skipping UNCONFIGURED profile: " + path.name)
                 continue
             if (any(token in text for token in placeholders)
                     or re.search(r"\bexample\.(com|org|net)\b|\.invalid\b", text, re.IGNORECASE)):
@@ -122,12 +123,13 @@ def project_files(source):
                   "| --- | --- | --- | --- | --- |\n" + "\n".join(rows) + "\n")
     else:
         index += "Configuration status: UNCONFIGURED\n\nNo READY projects.\n"
-        print("No READY projects. Configure projects/<name>.md from project.example.md and rerun setup.")
+        if report:
+            print("No READY projects. Configure projects/<name>.md from project.example.md and rerun setup.")
     files[destination + "index.md"] = index.encode("utf-8")
     return files
 
 
-def build_files(source, home):
+def build_files(source, home, report=True):
     """Return home-relative destinations and bytes, without modifying the disk.
 
     This workflow packages Markdown only. Human documentation stays in source.
@@ -144,7 +146,7 @@ def build_files(source, home):
             'read this file before proceeding. If unsure, read it; report access failures.\n'
         ).encode("utf-8"),
     }
-    files.update(project_files(source))
+    files.update(project_files(source, report))
     for path in sorted((source / "writing").rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source).as_posix()
         files[".copilot/engineering-workflow/" + relative] = render(path, root)
@@ -223,7 +225,10 @@ def load_manifest(home):
         return manifest, None
     if not manifest.is_file():
         raise ValueError("Install manifest is not a file; inspect " + str(manifest))
-    previous = json.loads(manifest.read_text(encoding="utf-8"))
+    try:
+        previous = json.loads(manifest.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ValueError("Invalid install manifest; inspect " + str(manifest) + ": " + str(error)) from error
     if not isinstance(previous, dict) or any(
         not isinstance(relative, str) or not isinstance(owned_hash, str)
         or re.fullmatch(r"[0-9a-f]{64}", owned_hash) is None
@@ -244,26 +249,21 @@ def load_manifest(home):
     return manifest, previous
 
 
-def install(source, home, check=False):
-    """Preflight ownership, then update files (0), or check for drift (0/1).
-
-    Conflicts raise before mutation. Exact expected bytes can be adopted even
-    without a manifest. Otherwise only bytes matching the last recorded digest
-    may be replaced or removed when no longer desired.
-    """
+def inspect_installation(source, home, report_profiles=True):
+    """Build expected files and inspect ownership state without mutation."""
     home = home.expanduser().resolve()
-    files = build_files(source, home)
+    files = build_files(source, home, report_profiles)
     manifest, loaded_manifest = load_manifest(home)
     previous = loaded_manifest or {}
-    expected_manifest = {p: digest(b) for p, b in files.items()}
-    manifest_bytes = (json.dumps(expected_manifest, indent=2) + "\n").encode("utf-8")
+    expected_manifest = {path: digest(data) for path, data in files.items()}
     manifest_outdated = previous != expected_manifest or loaded_manifest is None
 
-    conflicts, outdated = [], []
+    conflicts, conflict_paths, outdated = [], set(), []
     for relative, expected in files.items():
         target = safe_target(home, relative)
         if target.exists() and not target.is_file():
             conflicts.append(str(target) + " is not a file")
+            conflict_paths.add(relative)
             continue
         actual = target.read_bytes() if target.exists() else None
         if actual == expected:
@@ -271,6 +271,8 @@ def install(source, home, check=False):
         outdated.append(relative)
         if actual is not None and digest(actual) != previous.get(relative):
             conflicts.append(str(target) + " has existing or locally edited content")
+            conflict_paths.add(relative)
+
     stale = sorted(set(previous) - set(files))
     removable = []
     for relative in stale:
@@ -279,10 +281,46 @@ def install(source, home, check=False):
             continue
         if not target.is_file():
             conflicts.append(str(target) + " is not a file")
+            conflict_paths.add(relative)
         elif digest(target.read_bytes()) != previous[relative]:
             conflicts.append(str(target) + " is stale and no longer matches the last owned hash")
+            conflict_paths.add(relative)
         else:
             removable.append(relative)
+
+    return {
+        "home": home,
+        "files": files,
+        "manifest": manifest,
+        "loaded_manifest": loaded_manifest,
+        "expected_manifest": expected_manifest,
+        "manifest_outdated": manifest_outdated,
+        "conflicts": conflicts,
+        "conflict_paths": conflict_paths,
+        "outdated": outdated,
+        "stale": stale,
+        "removable": removable,
+    }
+
+
+def install(source, home, check=False):
+    """Preflight ownership, then update files (0), or check for drift (0/1).
+
+    Conflicts raise before mutation. Exact expected bytes can be adopted even
+    without a manifest. Otherwise only bytes matching the last recorded digest
+    may be replaced or removed when no longer desired.
+    """
+    inspection = inspect_installation(source, home)
+    home = inspection["home"]
+    files = inspection["files"]
+    manifest = inspection["manifest"]
+    expected_manifest = inspection["expected_manifest"]
+    manifest_bytes = (json.dumps(expected_manifest, indent=2) + "\n").encode("utf-8")
+    manifest_outdated = inspection["manifest_outdated"]
+    conflicts = inspection["conflicts"]
+    outdated = inspection["outdated"]
+    stale = inspection["stale"]
+    removable = inspection["removable"]
     if conflicts:
         raise ValueError("No files changed.\n" + "\n".join(conflicts)
                          + "\nMerge wanted content into the source first. "
@@ -318,6 +356,96 @@ def install(source, home, check=False):
     print("App: paste " + str(home / ".copilot/copilot-instructions.md")
           + " into Settings > Sessions > App instructions.")
     print("Run python setup.py --check, then start a fresh Copilot session.")
+    return 0
+
+
+def component_status(inspection, relatives):
+    """Summarize one group of desired installed files."""
+    if not relatives:
+        return "not configured"
+    if inspection["conflict_paths"].intersection(relatives):
+        return "conflict"
+    matching = 0
+    present = 0
+    for relative in relatives:
+        target = safe_target(inspection["home"], relative)
+        if not target.exists():
+            continue
+        present += 1
+        if target.is_file() and target.read_bytes() == inspection["files"][relative]:
+            matching += 1
+    if matching == len(relatives):
+        return "installed"
+    if present == 0:
+        return "missing"
+    return "out of date"
+
+
+def status(source, home):
+    """Print a human-oriented installation overview without mutation."""
+    source = source.resolve()
+    inspection = inspect_installation(source, home, report_profiles=False)
+    files = inspection["files"]
+    desired_present = any(
+        safe_target(inspection["home"], relative).exists() for relative in files
+    )
+    if inspection["conflicts"]:
+        state = "conflict"
+    elif inspection["loaded_manifest"] is None:
+        state = "safe update available" if desired_present else "not installed"
+    elif inspection["outdated"] or inspection["manifest_outdated"]:
+        state = "safe update available"
+    else:
+        state = "current"
+
+    skill_files = sorted(
+        relative for relative in files
+        if relative.startswith(".copilot/skills/")
+    )
+    skill_definitions = [
+        relative for relative in skill_files
+        if re.fullmatch(r"\.copilot/skills/[^/]+/SKILL\.md", relative)
+    ]
+    project_files = sorted(
+        relative for relative in files
+        if relative.startswith(".copilot/engineering-workflow/projects/")
+    )
+    project_profiles = [
+        relative for relative in project_files if not relative.endswith("/index.md")
+    ]
+    project_names = sorted(
+        read_routing(files[relative].decode("utf-8"))["Project"]
+        for relative in project_profiles
+    )
+    writing_files = sorted(
+        relative for relative in files
+        if relative.startswith(".copilot/engineering-workflow/writing/")
+    )
+    baseline_files = [".copilot/copilot-instructions.md"]
+
+    print("Engineering workflow status")
+    print("Source: " + str(source))
+    print("Installation: " + state)
+    print("Installation root: " + str(inspection["home"] / ".copilot"))
+    print("Engineering defaults: " + component_status(inspection, baseline_files))
+    print(
+        f"Skills: {len(skill_definitions)} discovered in source; "
+        + component_status(inspection, skill_files)
+    )
+    project_summary = f"Projects: {len(project_names)} READY in source"
+    if project_names:
+        project_summary += " (" + ", ".join(project_names) + ")"
+    print(project_summary + "; " + component_status(inspection, project_files))
+    print("Writing: " + component_status(inspection, writing_files))
+    if inspection["loaded_manifest"] is None:
+        print("Manifest: not present (" + str(inspection["manifest"]) + ")")
+    else:
+        print("Manifest: " + str(inspection["manifest"]))
+    print("Copilot app instructions: manual; not inspectable by setup")
+    if inspection["conflicts"]:
+        print("Conflicts:")
+        for conflict in inspection["conflicts"]:
+            print("  " + conflict)
     return 0
 
 
@@ -360,12 +488,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--home", type=Path,
                         help="Destination home directory; use a temporary directory for testing")
-    parser.add_argument("--check", action="store_true", help="Compare files without writing")
-    parser.add_argument("--uninstall", action="store_true",
-                        help="Remove unchanged files managed by this workflow")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true", help="Compare files without writing")
+    mode.add_argument("--status", action="store_true",
+                      help="Show a human-readable, read-only installation overview")
+    mode.add_argument("--uninstall", action="store_true",
+                      help="Remove unchanged files managed by this workflow")
     args = parser.parse_args()
-    if args.check and args.uninstall:
-        parser.error("--check and --uninstall cannot be used together")
     try:
         home = (args.home if args.home is not None else Path.home()).expanduser().resolve()
         override = os.environ.get("COPILOT_HOME")
@@ -373,11 +502,17 @@ def main():
             raise ValueError("COPILOT_HOME differs from the installation target. "
                              "Use the default layout; shared discovery in other surfaces "
                              "is not documented for a relocated Copilot home.")
+        source = Path(__file__).resolve().parent
+        if args.status:
+            return status(source, home)
         if args.uninstall:
             return uninstall(home)
-        return install(Path(__file__).resolve().parent, home, args.check)
+        return install(source, home, args.check)
     except (OSError, ValueError, RuntimeError) as error:
-        print(str(error), file=sys.stderr)
+        message = str(error)
+        if args.status:
+            message = "Unable to inspect engineering workflow status: " + message
+        print(message, file=sys.stderr)
         return 2
 
 

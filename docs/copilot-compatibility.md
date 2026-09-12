@@ -42,6 +42,8 @@ VS Code supports personal skills in `~/.copilot/skills`, `~/.claude/skills`, and
 
 Ask for the repository/profile/skill/writing files actually read and selected MCP site; inspect calls. Discovery does not prove invocation or expose hidden attention. `--check` verifies bytes and ownership, never UI settings or live behavior.
 
+Project loading still uses `~/.copilot/engineering-workflow/projects/index.md` and exactly one selected profile. Setup generates these from ignored local source configuration, installing only profiles referenced in the index table. The two committed `.example.md` files are human templates and are never installed. Without a source index, setup installs an empty UNCONFIGURED index; a passing `--check` for that state establishes consistency only. Missing/unconfigured identity blocks live project-dependent actions, while unrelated local work remains available. See [onboarding and migration](setup.md#project-onboarding).
+
 ## Planning surfaces and artifacts
 
 VS Code's built-in Plan agent (also invoked with `/plan`) researches, asks questions, revises its proposal, and offers Start Implementation. It saves a draft to `/memories/session/plan.md`; the documentation says session memory is cleared when the conversation ends and is unavailable to subsequent sessions. That path is host memory, not this workflow's resolved local artifact. [VS Code planning](https://code.visualstudio.com/docs/agents/run/planning)

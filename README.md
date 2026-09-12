@@ -1,6 +1,6 @@
 # Engineering workflow for Copilot
 
-A private engineering workflow for GitHub Copilot on Windows and macOS. It supplies engineering defaults, five task skills, project profiles, and writing guidance outside company repositories. The private source clone is canonical; files installed under your home are generated.
+A reusable engineering workflow for GitHub Copilot on Windows and macOS. It supplies engineering defaults, five task skills, project templates, and writing guidance outside company repositories. Your ignored local source profiles are canonical; files installed under your home are generated.
 
 The opinion: **understand before editing, challenge unsupported assumptions, change the owning layer, and claim only what the evidence supports.** Use the minimum sufficient machinery that preserves behavior and real contracts.
 
@@ -23,7 +23,7 @@ This describes how context contributes, not a precedence ladder. Instructions gu
 | Planning | What current proposal should guide this change? | [Planning](skills/planning/SKILL.md) |
 | Implementation | How should this meaningful change be constructed here? | [Implementation](skills/implementation/SKILL.md) |
 | Implementation-review | Is this pass grounded, correct, proportionate, and verified? | [Implementation review](skills/implementation-review/SKILL.md) |
-| Project profile | Which project, private conventions, and tool routes apply? | [Project index](projects/index.md) and one profile |
+| Project profile | Which project, private conventions, and tool routes apply? | Local `projects/index.md` and one profile; [index template](projects/index.example.md) |
 | Writing | How should engineering prose and useful visuals communicate it? | [Writing style](writing/style.md) |
 | External action | What exact consequential action is approved? | [External-action policy](instructions/baseline.md#external-action-policy), plus host permissions |
 
@@ -33,14 +33,22 @@ Normal questions use baseline grounding: trace only evidence that can change the
 
 ## Install and configure
 
-Python 3.12+ is the only installer dependency. From this private clone:
+Python 3.12+ is the only installer dependency. The repository ships two generic project templates. Your real configuration stays local and is ignored by Git:
+
+1. Copy `projects/index.example.md` to `projects/index.md`.
+2. Copy `projects/project.example.md` to a meaningful name such as `projects/sre-api.md`.
+3. Fill in and verify the project facts, then mark the profile READY.
+4. Add its filename and identities as a row in the index table. Repeat for any number of projects.
+5. Run setup and check from this clone:
 
 ```text
 python setup.py
 python setup.py --check
 ```
 
-Use `python3` on macOS if needed. The recommended lifecycle is: clone, inspect/customize source profiles, install, check, verify loading, use. **Configuration is required before live project use, not before first setup.** UNCONFIGURED samples are safe to install for inspection; their example hosts, reviewers, and commands must not be used.
+Use `python3` on macOS if needed. File copies work in Explorer, Finder, or your editor; no shell-specific initialization is required. **Configuration is required before live project use, not before first setup.** Without local `projects/index.md`, setup reports the gap and installs an empty UNCONFIGURED index for inspection. It never installs project templates. `--check` can pass for that state; it verifies installation consistency, not project readiness.
+
+Setup installs the active index and only its referenced profiles. Edit these files in source and rerun setup; do not edit installed copies under `~/.copilot/`. Workflow updates leave ignored configuration untouched. Incorporate relevant template improvements manually, and transfer local configuration separately if using multiple machines. Profiles hold identity/convention facts, never credentials. Existing users should follow the [tracked-profile migration](docs/setup.md#migration-from-tracked-project-profiles) before pulling this change.
 
 Setup renders `instructions/baseline.md` into one full baseline, `~/.copilot/copilot-instructions.md`. CLI discovers that file. A small `~/.copilot/instructions/engineering-workflow.instructions.md` bridge requests it in VS Code when applicable; inspect the actual read, especially for fileless questions. In the Copilot app, manually paste the full generated baseline into **Settings > Sessions > App instructions**. Setup cannot update that UI field. [Surface behavior and official sources](docs/copilot-compatibility.md)
 

@@ -30,6 +30,85 @@ def render(source, root):
     ).encode("utf-8")
 
 
+PROJECT_HEADER = [
+    "Profile", "Explicit names / aliases", "Git host and repository",
+    "Jira prefix hint", "Optional exact local root",
+]
+UNCONFIGURED_INDEX = b"""# Project selection
+
+Configuration status: UNCONFIGURED
+
+No projects are configured. Project-dependent actions are blocked; unrelated
+local work and illustrative drafts may continue. Do not infer a project or
+contact example hosts. Never load project templates as runtime context.
+
+Create projects/index.md from projects/index.example.md in the source clone,
+copy projects/project.example.md to projects/<name>.md, fill in verified facts,
+add its row to the index, and rerun setup and --check. Do not edit this generated
+installed index.
+"""
+
+
+def project_files(source, root):
+    """Read the index's one five-column table; package only its named profiles.
+
+    This deliberately accepts plain filenames or single-backtick filenames,
+    not arbitrary Markdown links, nested paths, or a general Markdown grammar.
+    """
+    projects = source / "projects"
+    index = safe_target(source.resolve(), "projects/index.md")
+    destination = ".copilot/engineering-workflow/projects/"
+    if not index.exists():
+        print("Project configuration is not initialized. Using an empty UNCONFIGURED index.\n"
+              "Copy projects/index.example.md to projects/index.md and "
+              "projects/project.example.md to projects/<name>.md; "
+              "edit both, then rerun setup and --check.")
+        return {destination + "index.md": UNCONFIGURED_INDEX}
+    try:
+        data = render(index, root)
+        rows = [line.strip() for line in data.decode("utf-8").splitlines()
+                if line.lstrip().startswith("|")
+                or re.match(r"\s*`?[^|`]+\.md`?\s*\|", line)]
+        cells = [row[1:-1].split("|") for row in rows
+                 if row.startswith("|") and row.endswith("|")]
+        cells = [[cell.strip() for cell in row] for row in cells]
+        if (len(cells) != len(rows) or len(cells) < 2
+                or cells[0] != PROJECT_HEADER
+                or len(cells[1]) != len(PROJECT_HEADER)
+                or any(re.fullmatch(r":?-{3,}:?", cell) is None for cell in cells[1])):
+            raise ValueError("Expected the single five-column Profile table from index.example.md")
+        files = {destination + "index.md": data}
+        seen = {}
+        source_names = {unicodedata.normalize("NFC", p.name) for p in projects.iterdir()}
+        for row in cells[2:]:
+            if len(row) != len(PROJECT_HEADER):
+                raise ValueError("Each profile row must have five cells and leading/trailing pipes")
+            name = row[0]
+            if name.startswith("`") and name.endswith("`"):
+                name = name[1:-1]
+            if (not name.endswith(".md") or "/" in name or "\\" in name or "`" in name
+                    or name.casefold() in ("index.md", "readme.md")
+                    or name.casefold().endswith(".example.md")):
+                raise ValueError("Invalid profile reference: " + name
+                                 + "; use a .md filename directly under projects/, not a template")
+            path = safe_target(source.resolve(), "projects/" + name)
+            key = unicodedata.normalize("NFC", name).casefold()
+            if key in seen and seen[key] != name:
+                raise ValueError("Profile references collide across platforms: " + name)
+            seen[key] = name
+            # Enforce case spelling; macOS may decompose Unicode filenames.
+            if not path.is_file() or unicodedata.normalize("NFC", name) not in source_names:
+                raise ValueError("Referenced profile is missing (check exact filename): " + name
+                                 + "; create it from project.example.md or correct the index row")
+            if destination + name not in files:
+                files[destination + name] = render(path, root)
+        if len(files) == 1:
+            print("Project index has no profiles; project-dependent actions remain unconfigured.")
+        return files
+    except (OSError, ValueError) as error:
+        raise ValueError("Invalid project configuration in " + str(index) + ": " + str(error)) from error
+
+
 def build_files(source, home):
     """Return home-relative destinations and bytes, without modifying the disk.
 
@@ -47,10 +126,10 @@ def build_files(source, home):
             'read this file before proceeding. If unsure, read it; report access failures.\n'
         ).encode("utf-8"),
     }
-    for folder in ("projects", "writing"):
-        for path in sorted((source / folder).rglob("*.md", case_sensitive=True)):
-            relative = path.relative_to(source).as_posix()
-            files[".copilot/engineering-workflow/" + relative] = render(path, root)
+    files.update(project_files(source, root))
+    for path in sorted((source / "writing").rglob("*.md", case_sensitive=True)):
+        relative = path.relative_to(source).as_posix()
+        files[".copilot/engineering-workflow/" + relative] = render(path, root)
     for path in sorted((source / "skills").rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source / "skills").as_posix()
         files[".copilot/skills/" + relative] = render(path, root)

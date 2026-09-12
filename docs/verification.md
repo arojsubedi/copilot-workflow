@@ -1,5 +1,15 @@
 # Verification and extension checks
 
+## Local project configuration validation: 2026-09-11
+
+Ran `python -m unittest discover -s tests` on Windows with Python 3.14 and Python 3.12.13. Each run completed **36 tests: 35 passed, one real symlink test skipped** because this account lacks link privileges. Temporary sources/homes covered the fresh empty state, one/several arbitrary profile names, updates, omitted unrelated files/templates, duplicates/backticks, spaces/Unicode and BOM/newlines, missing/unreadable/invalid references, CLI error reporting, installed drift, rename/removal, and explicit ownership cleanup. Simulated linked-source checks also passed; native link behavior remains subject to the skip.
+
+Explicit `git check-ignore --no-index` checks confirmed that local index/profile names are ignored, both example files remain trackable, and nested documentation is unaffected. A temporary Git clone also exercised a real local `git pull --ff-only`: the committed profile template changed, ignored local files retained their bytes, and `git status --porcelain` stayed empty. Tests exclude the developer's actual project configuration from source fixtures.
+
+Separately ran the previous HEAD installer with its tracked profiles in a temporary home, then the new CLI with one locally configured profile. Both check and install refused the obsolete owned profiles without changing installed bytes. After explicitly removing the three obsolete profiles and their manifest entries, update and `--check` passed; only the active index and referenced profile remained in installed project context. No default-home installation was performed.
+
+Applied the repository's `implementation-review` skill to the working-tree diff and affected context. Fixed a malformed-row case that could omit a profile when its opening pipe was missing, and verified the regression. Reviewed template completeness, source/installed ownership, unchanged selection rules and external-action policy, migration, and documented parser constraints. All 49 ordinary local Markdown file links resolved; stale slot-name/configuration instructions were removed. Native macOS and live Copilot selection/loading remain unverified; these installer checks do not establish model compliance or live project readiness.
+
 ## Installer
 
 Run from the private source using Python 3.12+ (`python3` where appropriate):
@@ -8,7 +18,9 @@ Run from the private source using Python 3.12+ (`python3` where appropriate):
 python -m unittest discover -s tests -v
 ```
 
-The suite uses disposable homes and invokes the CLI through `sys.executable` without a shell. It covers fresh install/check/update, preserved AGENTS.md/repository instructions and skills, unrelated personal/third-party skills and MCP/editor settings, same-destination conflicts, profile updates/fourth-project installation, legacy manifest relocation and explicit cleanup, local edits, removed sources, stale/malformed manifests, interrupted writes, temporary cleanup, spaces/Unicode, source BOM/newline normalization, installed byte drift, path containment, case collisions, and generated adapters. A real symlink test may skip when privileges are unavailable; a simulated junction check does not replace native filesystem testing.
+The suite uses disposable source copies/homes and invokes the CLI through `sys.executable` without a shell. It covers fresh unconfigured install/check, one/several arbitrarily named profiles, referenced-only installation, duplicate/backtick references, malformed/missing/unsafe references, installed profile/index drift, rename/removal with explicit owned cleanup, and preservation of unowned neighbors. A temporary Git repository checks ignored configuration, trackable templates, unaffected nested documentation, and a real local `git pull` that updates templates while preserving local facts and clean status. Tests require Git as well as Python; setup itself requires only Python.
+
+Existing checks cover preserved AGENTS.md/repository instructions and skills, unrelated personal/third-party skills and MCP/editor settings, same-destination conflicts, legacy manifest relocation and explicit cleanup, local edits, removed sources, stale/malformed manifests, interrupted writes, temporary cleanup, spaces/Unicode, source BOM/newline normalization, installed byte drift, path containment, case collisions, and generated adapters. A real symlink test may skip when privileges are unavailable; a simulated junction check does not replace native filesystem testing.
 
 Run the same suite on Windows and macOS when changing filesystem behavior. Native runs exercise their actual path and file-replacement APIs; changing a path class or mocking an OS name cannot certify them. No test calls live Jira/GitHub or launches a Copilot session.
 
@@ -19,6 +31,8 @@ Use a disposable checkout until real profiles are READY. Inspect tool calls and 
 | Situation / prompt | Evidence to inspect |
 | --- | --- |
 | Show active engineering workflow context; read baseline if needed | Correct `.copilot/engineering-workflow` support paths and `.copilot/copilot-instructions.md` baseline; observed reads and failures, no invented attention inspector |
+| Fresh clone with no local index | Generated empty UNCONFIGURED index is read; no project template/profile loaded or live project action attempted; unrelated local work can proceed |
+| Configured index, missing/unconfigured selected profile | Report the source configuration gap, no alternate profile or template fallback, no guessed remote/site |
 | Fileless question in VS Code | Baseline explicitly attached/read if the bridge did not activate |
 | List skills, then request an implementation review | Correct source for `implementation-review`, not a same-name project/plugin skill |
 | Implement a meaningful behavior change | `implementation` loads for construction; `implementation-review` challenges the resulting pass. No mandatory spec, seam approval, TDD, or commit. |
@@ -155,7 +169,7 @@ During the initial 2026-09-09 portability refinement, the old manifest bug was r
 
 The subsequent iterative self-review refinement left the installer unchanged and extended the update test to cover changed skill and baseline content. Its suite ran on Windows with Python 3.12 and 3.14: 20 tests passed and one real symlink test skipped on each runtime because the account lacked link privileges. Source and installed skills validated; an update from the preceding source snapshot passed in a temporary home containing spaces and Unicode, including check-mode detection and rendered paths. Local documentation links resolved. The final continuation confirmed that the saved review diff matched the resumed source and reused these results; it changed only this verification record.
 
-The behavioral scenarios above remain unexecuted probes, not live Copilot results. Native macOS execution and live Copilot loading/permission checks were not performed. Profiles remain UNCONFIGURED and writing samples ILLUSTRATIVE; passing installer tests does not make them ready for live project actions.
+The behavioral scenarios above remain unexecuted probes, not live Copilot results. Native macOS execution and live Copilot loading/permission checks were not performed. At that validation, sample profiles were UNCONFIGURED; current distribution ships only templates and generates an empty index until local configuration exists. Passing installer tests does not establish project readiness or writing-example approval.
 
 ## Planning refinement validation: 2026-09-10
 
@@ -171,7 +185,7 @@ Changed files: `README.md`, `DESIGN.md`, `instructions/baseline.md`, `skills/imp
 
 ## Construction refinement validation: 2026-09-10
 
-Ran `python -m unittest discover -s tests -v` on Windows with Python 3.14 and the installed Python 3.12 runtime. Each run completed 25 tests: **24 passed, one real symlink test skipped** because this account cannot create symlinks. Temporary homes exercised fresh/check/update, ownership conflicts, unrelated repository/personal configuration, third-party and same-name skills, profile changes, a fourth project, and migration. The installer still has no third-party runtime dependency.
+Ran `python -m unittest discover -s tests -v` on Windows with Python 3.14 and the installed Python 3.12 runtime. Each run completed 25 tests: **24 passed, one real symlink test skipped** because this account cannot create symlinks. Temporary homes exercised fresh/check/update, ownership conflicts, unrelated repository/personal configuration, third-party and same-name skills, profile changes, an additional project, and migration. The installer still has no third-party runtime dependency.
 
 Separately executed the saved previous `setup.py` against a temporary home containing spaces and Unicode, then exercised the new CLI's migration refusal without writes, explicit manifest relocation, obsolete-file refusal, manual removal of its 11 obsolete recorded files/entries, new install, repeat install, and clean checks. The final layout contains 14 generated Markdown files plus the manifest, one full baseline, and four skills. No default home installation or live external action was performed.
 

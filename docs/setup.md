@@ -52,7 +52,7 @@ For a disposable test destination, use `python setup.py --home <directory>`. Tha
 
 Setup discovers direct `agents/*.agent.md` profiles and installs them to `.copilot/agents/` under the selected home. This is the documented personal Copilot CLI agent location. After installation, start a fresh CLI session and inspect its skills and agent picker; verify `pr-review` and invoke each installed reviewer on a read-only fixture. Other clients need their own skill/agent discovery check. Missing delegated-agent support falls back to the main review skill. See [PR review](pr-review.md) for the workflow and [GitHub's CLI layout](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference) for discovery paths.
 
-Internal reviewer names use the `pr-review-` prefix and CLI `infer: false` to prevent unrelated automatic selection. Check explicit named dispatch in the client you use; if it is unavailable with inference disabled, the parent handles the question. The report writer is installed with the skill and needs Python 3.12+ only. Substantial reports are separate immutable runs under `engineering-workflow/reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/`, so the same head can be reviewed again after discussion changes.
+Internal reviewer names use the `pr-review-` prefix and CLI `infer: false` to prevent unrelated automatic selection. Check explicit named dispatch in the client you use; if it is unavailable with inference disabled, the parent handles the question. Supplementary Markdown under each skill, including nested `references/`, is installed recursively with rendered paths and normal ownership protection. The report writer is installed with the skill and needs Python 3.12+ only. Substantial reports are separate immutable runs under `engineering-workflow/reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/`, so the same head can be reviewed again after discussion changes.
 
 ## Inspect status
 
@@ -83,7 +83,7 @@ python setup.py --uninstall
 
 Uninstall first checks every file recorded as belonging to this workflow. Missing files count as already removed. Unchanged managed files are removed, along with the workflow's ownership record. If any managed file has been edited or replaced, uninstall stops before removing anything and reports the conflict. Unrelated files and neighboring Copilot configuration are never removed.
 
-Agent profiles use the same ownership protection on install, update, check, stale cleanup, and uninstall. A locally modified active or stale managed agent blocks mutation; unrelated personal agents remain untouched. Runtime reports under `.copilot/engineering-workflow/reviews/` are user-owned, excluded from the manifest, and survive uninstall.
+Agent profiles and supplementary skill resources use the same ownership protection on install, update, check, stale cleanup, and uninstall. A locally modified active or stale managed agent blocks mutation; unrelated personal agents remain untouched. Runtime reports under `.copilot/engineering-workflow/reviews/` are user-owned, excluded from the manifest, and survive uninstall.
 
 Renamed managed profiles use ordinary stale-file cleanup: setup removes an unchanged old destination and installs its current source name, without aliases. A locally edited old destination blocks the entire update until its changes are preserved and the conflict is resolved.
 

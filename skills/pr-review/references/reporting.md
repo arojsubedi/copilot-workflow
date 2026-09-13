@@ -1,0 +1,14 @@
+# Private review reports
+
+The [core review](../SKILL.md) owns evidence, coverage, acceptance and disposition. Persist its complete current assessment, including partial coverage when applicable; writing a report does not establish review completeness.
+
+For a substantial technical report, read `{{WORKFLOW_ROOT}}/writing/style.md` and `{{WORKFLOW_ROOT}}/writing/examples/summary.md` if present. Include target and pinned base/head, reviewed-at UTC timestamp, prior reviewed head and its evidence when this is a re-review, current behavior gate with explanation, concise coverage closure/checks (material change units accounted for and any unreviewed area), all accepted findings grouped by severity with exact anchors and supporting evidence, concise history reconciliation where relevant, findings already covered by threads, and recommended disposition. Include conditional concerns and material gaps only when present. Do not dump threads, copied issue descriptions, rejected candidates, hidden reasoning, raw specialist transcripts or an investigation diary. No synthetic finding IDs in human-facing prose.
+
+Persist each substantial review as a new immutable run outside the reviewed worktree:
+
+`{{WORKFLOW_ROOT}}/reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/<review-run-id>.md`
+
+Use the installed [report writer](../scripts/persist_report.py) with Python 3.12+ to enforce this filesystem contract. Read its CLI help when needed. Pass the complete current technical report body as UTF-8 standard input and pass the pinned identity, base/head, gate, recommended disposition, verified worktree and installed workflow root as separate arguments. Include `--prior-head` only when evidenced. Do not interpolate review text, refs, or paths into shell code. The helper adds target/timestamp metadata, generates an unambiguous UTC run ID, selects a deterministic numeric suffix on a timestamp collision, writes exclusively without overwriting another report, normalizes UTF-8/LF, and reads back exact bytes. It refuses invalid identity components, path traversal, linked/junction/reparse paths and destinations inside the reviewed worktree. Its checks guard accidental redirection, not a hostile filesystem race.
+
+Use the timestamp and path actually recorded by the helper; do not invent successful persistence. Each run remains distinct even when the PR/head or report body is unchanged. Same-head discussion or external evidence can change the current judgment without a code commit. If the helper, Python, private location or validation is unavailable, retain the complete report in chat and disclose persistence failure; never fall back into the work repository or regenerate an unchecked writer. Runtime reports are user-owned, outside setup's install manifest, and survive uninstall. No review database or aliases are needed.
+

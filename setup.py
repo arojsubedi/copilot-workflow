@@ -150,8 +150,10 @@ def build_files(source, home, report=True):
     for path in sorted((source / "writing").rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source).as_posix()
         files[".copilot/engineering-workflow/" + relative] = render(path, root)
-    for path in sorted((source / "skills").rglob("*.md", case_sensitive=True)):
+    skills = safe_target(source.resolve(), "skills")
+    for path in sorted(skills.rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source / "skills").as_posix()
+        safe_target(source.resolve(), "skills/" + relative)
         files[".copilot/skills/" + relative] = render(path, root)
     for path in sorted((source / "skills").glob("*/scripts/*.py", case_sensitive=True)):
         relative = path.relative_to(source / "skills").as_posix()

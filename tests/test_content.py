@@ -85,7 +85,9 @@ class ContentTests(unittest.TestCase):
                     self.assertIsNotNone(header)
                     fields = dict(line.split(": ", 1) for line in header[1].splitlines())
                     self.assertEqual(len(fields), len(header[1].splitlines()))
-                    self.assertEqual(set(fields), {"name", "description", "tools"})
+                    self.assertEqual(set(fields), {"name", "description", "tools", "infer"})
+                    self.assertIs(json.loads(fields["infer"]), False)
+                    self.assertTrue(fields["name"].startswith("pr-review-"))
                     self.assertRegex(agent.name, r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*\.agent\.md$")
                     self.assertEqual(fields["name"] + ".agent.md", agent.name)
                     self.assertTrue(fields["description"].strip())
@@ -111,9 +113,23 @@ class ContentTests(unittest.TestCase):
         self.assertIn("Do not include the parent's behavior-gate result", skill)
         self.assertIn("missing high-value regression scenarios", skill)
         self.assertIn("explicit approval", skill)
-        self.assertIn("outside the resolved reviewed Git worktree", skill)
-        self.assertIn("Create a new leaf exclusively", skill)
-        self.assertIn("never overwrite different bytes", skill)
+        self.assertIn("existing thread", skill)
+        self.assertIn("recommended disposition", skill)
+        self.assertIn("APPROVE", skill)
+        self.assertIn("COMMENT", skill)
+        self.assertIn("REQUEST CHANGES", skill)
+        self.assertIn("Do not delete a valid technical finding", skill)
+        self.assertIn("A reply is not proof of a fix", skill)
+        self.assertIn("summary, inline comments and thread replies", skill)
+        self.assertIn("pr-<number>/<head-sha>/<review-run-id>.md", skill)
+        self.assertIn("scripts/persist_report.py", skill)
+
+    def test_publication_examples_cover_review_artifacts_without_internal_ids(self):
+        examples = (SOURCE / "writing/examples/review.md").read_text(encoding="utf-8")
+        for kind in ("APPROVE summary", "COMMENT summary", "REQUEST CHANGES summary",
+                     "re-review", "existing thread"):
+            self.assertIn(kind, examples)
+        self.assertNotRegex(examples, r"\b(?:B|I|AC|F)\d+\b|\u2014")
 
     def test_mcp_example_is_valid_source_only_reference(self):
         example = SOURCE / "mcp/mcp.example.json"

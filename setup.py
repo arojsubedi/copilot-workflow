@@ -132,7 +132,7 @@ def project_files(source, report=True):
 def build_files(source, home, report=True):
     """Return home-relative destinations and bytes, without modifying the disk.
 
-    This workflow packages Markdown only. Human documentation stays in source.
+    Package runtime Markdown and Python skill scripts. Human docs stay in source.
     Forward slashes serialize paths for Markdown/JSON, not shell execution.
     """
     root = home / ".copilot" / "engineering-workflow"
@@ -152,6 +152,10 @@ def build_files(source, home, report=True):
         files[".copilot/engineering-workflow/" + relative] = render(path, root)
     for path in sorted((source / "skills").rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source / "skills").as_posix()
+        files[".copilot/skills/" + relative] = render(path, root)
+    for path in sorted((source / "skills").glob("*/scripts/*.py", case_sensitive=True)):
+        relative = path.relative_to(source / "skills").as_posix()
+        safe_target(source.resolve(), "skills/" + relative)
         files[".copilot/skills/" + relative] = render(path, root)
     agents = safe_target(source.resolve(), "agents")
     for path in sorted(agents.glob("*.agent.md", case_sensitive=True)):

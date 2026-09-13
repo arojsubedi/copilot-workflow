@@ -394,7 +394,7 @@ class InstallTests(unittest.TestCase):
             ".vscode/settings.json": b"Editor configuration",
             ".copilot/other-workflow/unrelated.md": b"Unowned neighbor",
             ".copilot/agents/personal.agent.md": b"Personal agent",
-            ".copilot/engineering-workflow/reviews/git.test/team/repo/pr-1-head.md": b"User report",
+            ".copilot/engineering-workflow/reviews/git.test/team/repo/pr-1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/20260912T120000000000Z.md": b"User report",
         }
         for relative, data in preserved.items():
             path = self.home / relative
@@ -782,7 +782,7 @@ class InstallTests(unittest.TestCase):
         relatives = [".copilot/agents/" + path.name for path in definitions]
         preserved = {
             ".copilot/agents/personal.agent.md": b"Personal agent",
-            ".copilot/engineering-workflow/reviews/git.test/team/repo/pr-1-head.md": b"User report",
+            ".copilot/engineering-workflow/reviews/git.test/team/repo/pr-1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/20260912T120000000000Z.md": b"User report",
         }
         for relative, data in preserved.items():
             target = self.home / relative
@@ -883,6 +883,61 @@ class InstallTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "linked install path"):
                     self.install()
         self.assertFalse(self.home.exists())
+
+    def test_namespaced_agent_update_removes_only_unchanged_old_managed_names(self):
+        agents = self.source / "agents"
+        current = {path.name: path.read_bytes() for path in agents.glob("pr-review-*.agent.md")}
+        self.assertTrue(current)
+        old_names = []
+        for name, data in current.items():
+            old = name.removeprefix("pr-")
+            old_names.append(old)
+            (agents / name).unlink()
+            (agents / old).write_bytes(data.replace(name.removesuffix(".agent.md").encode(),
+                                                   old.removesuffix(".agent.md").encode()))
+        self.install()
+        unrelated = self.home / ".copilot/agents/user-notes.agent.md"
+        unrelated.write_bytes(b"Personal agent")
+        for name in old_names:
+            (agents / name).unlink()
+        for name, data in current.items():
+            (agents / name).write_bytes(data)
+        conflict = self.home / ".copilot/agents" / old_names[0]
+        original = conflict.read_bytes()
+        conflict.write_bytes(b"Preserve locally modified old agent")
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        for check in (False, True):
+            with self.assertRaisesRegex(ValueError, "stale and no longer matches"):
+                self.install(check=check)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+        conflict.write_bytes(original)
+        self.assertEqual(self.install(check=True), 1)
+        self.assertEqual(self.install(), 0)
+        entries = json.loads((self.home / SETUP.MANIFEST_RELATIVE).read_text(encoding="utf-8"))
+        for name in old_names:
+            self.assertFalse((self.home / ".copilot/agents" / name).exists())
+            self.assertNotIn(".copilot/agents/" + name, entries)
+        for name, data in current.items():
+            self.assertEqual((self.home / ".copilot/agents" / name).read_bytes(), data)
+            self.assertIn(".copilot/agents/" + name, entries)
+        self.assertEqual(unrelated.read_bytes(), b"Personal agent")
+        self.assertEqual(self.install(check=True), 0)
+
+    def test_runtime_script_is_rendered_owned_and_protected(self):
+        script = self.source / "skills/pr-review/scripts/persist_report.py"
+        original = script.read_text(encoding="utf-8")
+        script.write_bytes(b"\xef\xbb\xbf" + original.replace("\n", "\r\n").encode("utf-8"))
+        self.install()
+        relative = ".copilot/skills/pr-review/scripts/persist_report.py"
+        target = self.home / relative
+        self.assertEqual(target.read_bytes(), original.encode("utf-8"))
+        entries = json.loads((self.home / SETUP.MANIFEST_RELATIVE).read_text(encoding="utf-8"))
+        self.assertIn(relative, entries)
+        target.write_bytes(target.read_bytes() + b"# Local edit\n")
+        with self.assertRaisesRegex(ValueError, "locally edited"):
+            self.install()
+        with self.assertRaisesRegex(ValueError, "locally modified"):
+            self.uninstall()
 
     def test_status_manifest_error_uses_exit_two_without_mutation(self):
         self.install()

@@ -1,7 +1,8 @@
 ---
-name: review-correctness
-description: Independently challenge consequential PR behavior and contracts using reachable counterexamples. Return technical candidates from pinned evidence without editing.
+name: pr-review-correctness
+description: Internal pr-review worker. Independently challenge consequential PR behavior and contracts using reachable counterexamples. Return technical candidates from pinned evidence without editing.
 tools: ["read", "search"]
+infer: false
 ---
 
 # Correctness review

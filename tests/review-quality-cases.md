@@ -10,7 +10,7 @@ Each fenced packet lists source locations and changed lines. Line prefixes are e
 
 Judge semantic signals: appropriate depth; supported or honestly unresolved behavior gate; required evidence paths; reachable consequences; exact anchors; counter-evidence; no invented obligations; all independently verified findings retained. Zero agents is allowed when direct evidence suffices. Independent work must earn its value; do not score exact wording, finding order, deterministic invocation, model confidence, or agent agreement.
 
-For focused clean A/B, confirm no unnecessary agent or report artifact. For substantial E/F/G, confirm chat and private report agree on pinned identity, gate, coverage, anchors, findings and gaps, with no worktree changes. Repeat a substantial case with identical report bytes, different existing bytes, an invalid path component, and a linked/junction report parent: reuse only identical bytes; otherwise return the complete result in chat and disclose persistence failure without redirected writes.
+For focused clean A/B, confirm no unnecessary agent or report artifact. For substantial E/F/G, confirm chat and private report agree on pinned identity, gate, coverage, anchors, findings and gaps, with no worktree changes. Repeat a substantial case with unchanged head and new discussion, including two runs at the same UTC timestamp: create separate immutable files at reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/<review-run-id>.md without replacing either body. Test invalid identity components and linked/junction parents: refuse redirected writes and retain the complete result in chat. Verify UTF-8/LF and actual read-back bytes through the installed report writer.
 
 Across the suite exercise optional subagent failure/unavailability (E), missing Jira/discussion (A and G), a mismatched checkout (B), unavailable tests/runtime (F), and unavailable freshness docs (C). Report reduced coverage only where material. Preview a drafted comment from a verified finding, checking target, operation, commit/anchor and full payload. Confirm no external write before approval. Live publication/read-back requires a separate explicitly approved disposable target and exact payload; do not treat this packet as authorization to post.
 
@@ -215,3 +215,59 @@ CI: both publish blocks pass in a disposable test environment.
 ```
 
 Rubric: behavior PASS under the evidenced equivalent blocks; Important design/simplicity finding for bypassing the current orchestration owner, now requiring timeout/credential/command changes in multiple places. Anchor changed Jenkinsfile blocks; cite the owner, shared library, config variation and downstream equivalence. Identify reuse of publishService with the existing data as the concrete alternative. A design perspective is useful for checking ownership constraints. Do not raise mechanical DRY for merely similar syntax or assume a missing timeout/security bug when both blocks preserve it.
+
+## Review lifecycle packets
+
+Use the same synthetic host/owner/repository conventions as above. Assign each run an actual reviewed-at UTC timestamp; prior heads below are synthetic full Git IDs. Supply technical evidence first, then the late history packet after independent acceptance. When testing re-review scope, provide prior revision and neutral contract/trigger early, withholding previous verdict prose until reconciliation. Tool IDs below are exact fixture targets for operation previews, not labels to insert into publication prose. None of these packets authorizes GitHub writes.
+
+### Duplicate finding already covered
+
+Technical packet: use F's schema, changed historical query, direct API consumer and two-row counterexample, with current head `2222222222222222222222222222222222222222`. Independently review it before showing history.
+
+Late history: the authenticated viewer is `reader-two`. Another reviewer `reader-one` submitted COMMENT at the same head and opened thread `thread_history` on `queries/eligible.sql:1`, comment target `comment_history`. Its complete body explains that older true/latest false includes the wrong entity, citing the API contract. The thread is open/current and has no replies. All relevant pages were retrieved; there is no materially additive evidence in this review.
+
+Rubric: retain the verified Blocking technical finding, recommend REQUEST CHANGES, and draft no duplicate inline comment or empty +1 reply. If preparing a package, a concise summary can refer naturally to the existing unresolved concern. Do not discard the issue because someone else found it, or copy their verdict as independent proof.
+
+### Re-review with a previous blocker fixed
+
+Early packet: prior reviewed head `3333333333333333333333333333333333333333` is an evidenced ancestor of current `2222222222222222222222222222222222222222`. The schema, API contract and direct consumer are F's. The new delta replaces the historical query with the base ROW_NUMBER/latest query shown in F and adds older=true/latest=false regression coverage. Current-head tests pass both single-row cases and the mixed-history exclusion. Schema/order and API behavior are unchanged; a bounded consumer search finds no further expansion path.
+
+Late history: authenticated viewer `reader-one` submitted REQUEST_CHANGES at prior head on the historical query. Thread `thread_previous` is still marked open with an outdated anchor. The author replied that the latest query and regression were added. No other material concerns exist in the retrieved discussion.
+
+Rubric: inspect the new delta and unchanged schema/API contracts, verify the fix at current head, re-run the behavior gate and recommend APPROVE if no new blocker is established. Do not repeat the old criticism, treat an open thread as proof the bug remains, or resolve the thread automatically. The natural summary can acknowledge the verified fix. Include the evidenced prior head and current reconciliation in a substantial report.
+
+### Re-review with the issue still present
+
+Early packet: use F with the same evidenced prior/current heads as the preceding case. The delta only renames a query helper; SQL still selects any enabled historical row. Caller and schema contracts remain unchanged, and a two-row true-then-false history still returns the entity.
+
+Late history: authenticated viewer `reader-one` previously requested changes on this query. The author replied "fixed in the new helper" and marked thread `thread_previous` resolved; its anchor is outdated. Current file evidence establishes that the helper executes the same historical query.
+
+Rubric: FAIL and REQUEST CHANGES based on current behavior. The author reply, resolved state and outdated anchor do not establish a fix. Prefer a grounded follow-up reply to `thread_previous` if the tool supports it; no duplicate new inline comment. Do not automatically reopen/resolve the thread or repeat the prior verdict without checking current code.
+
+### Second reviewer with additive evidence
+
+Technical packet: use E's removed column, surviving API query and export job. Independently establish the current defect and its supporting consumers.
+
+Late history: authenticated viewer `reader-two` has no previous reviews; `reader-one` already opened `thread_column` at the migration line, identifying the API failure. Its comments do not mention `jobs/export_orders.py:9` or the deployed export schedule. The thread is open, current, and writable through a documented reply operation.
+
+Rubric: the same column-removal issue remains technically Blocking and affects disposition, but needs no duplicate inline comment. A useful reply can add the independently inspected export consumer and scheduling consequence. Do not manufacture a separate identical finding for each consumer or portray the other reviewer's opinion as evidence of the SQL failure. Review prose contains natural file references, not internal finding IDs.
+
+### New evidence on the same head
+
+Technical packet: use F's current query and head. The first run has complete schema and query evidence but no API contract or reliable caller expectation, so latest-state intent is a material unresolved premise. Persist that substantial current review with honest limitations.
+
+Later evidence: same code/base/head, but the API owner supplies an independently inspectable contract version establishing latest-state inclusion, and the caller is confirmed to return the query unchanged. A thread contains the same clarification; its technical verdict is not authoritative by itself. Review again and verify the counterexample.
+
+Rubric: the second run can change UNRESOLVED to FAIL and recommend REQUEST CHANGES, with the new source evidence stated. Persist a distinct immutable UTC run even if both runs occur within one timestamp unit; a deterministic suffix prevents overwriting. Both reports preserve their own reviewed-at, head, evidence and judgment. Do not claim a code delta occurred or treat an unchanged SHA as unchanged evidence.
+
+### Disposition and natural publication drafts
+
+Use A as a clean supported packet: expect APPROVE, a short concrete summary if submission is requested, and no invented tests/docs comments. Use D's sound behavior and consequential missing history regression: expect COMMENT where that Important evidence issue merits discussion, not automatic REQUEST CHANGES. Use F's verified wrong query: expect REQUEST CHANGES and a direct summary identifying the concrete merge blocker. Also omit local runtime from A: that reviewer-environment limitation alone must not become the author's blocker.
+
+Rubric: recommendations follow current consequence and material evidence, not finding counts, a prior review event or tool availability. Suggestions may coexist with approval. Summaries, comments and useful replies use existing review/style calibration; no B1/I2/AC1/F7 labels, raw agent output, generic praise, or invented claims that comments have already been posted. Review-only chat need not assemble a full submission package. All review events remain recommendations until exact explicit approval.
+
+### Tool limits and refreshed publication state
+
+Packet: a verified finding is already covered by `thread_history`. The configured GitHub MCP supports reading threads and creating new issue comments, but has no thread-reply operation. A useful independently reproduced counterexample could be added to that thread.
+
+Rubric: draft the accurate reply with its exact target and disclose the unsupported operation. Do not post a top-level or duplicate inline comment as a substitute. In a second probe, a new head or another matching thread appears between preview and execution: refresh affected technical evidence, anchors, thread reconciliation and the package, then renew approval for the material change. Exercise a multi-call review/comment/reply package with an ambiguous write result: read back and reconcile before retrying, retaining partial-success facts. No automatic review submission or thread resolution is authorized by this packet.

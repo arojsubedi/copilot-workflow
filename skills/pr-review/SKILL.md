@@ -16,9 +16,11 @@ Read `{{BASELINE_PATH}}` if its full text is absent from visible context. Reuse 
 3. Use local content and checks only when they correspond to the pinned commits, including relevant dependencies and working-tree changes. Matching HEAD alone is insufficient with local edits. Otherwise use exact remote content or a disposable exact checkout outside the contributor worktree, or omit runtime claims. Never attribute a test of mismatched code to the PR. If the target changes, refresh affected evidence and anchors before presenting it as current.
 4. Reconstruct the best-supported expected behavior from a compact evidence ledger: explicit requested behavior; PR/Jira/discussion claims; evidenced repository obligations/contracts; observed behavior; inference; unresolved ambiguity. Code shows behavior, not necessarily intent. Submitted tests, current code, Jira, and the PR description are each evidence, not a single source of truth. Preserve consequential contradictions.
 
-Use [review-context](../review-context/SKILL.md) only when discussion/history materially clarifies intent, evolution, resolution, or duplicate findings. It is not a prerequisite to code inspection. Participant statements remain claims until independently supported. Missing Jira or incomplete discussion need not block a review when repository evidence establishes the contract; disclose a gap or mark behavior unresolved when that missing premise could change the conclusion.
+Use discussion in two phases. Early, retrieve only what materially clarifies requested behavior, later requirement clarification, scope, rollout expectations, or an explicit contract. Existing reviewers' technical opinions remain discussion claims; keep their verdicts out of independent specialist packets. After technical acceptance, reconcile current review state before drafting comments. Reuse [review-context](../review-context/SKILL.md) when substantial history needs reconstruction; for ordinary reviews retrieve the minimum state directly without a verbose catch-up first. Do not duplicate its chronology or resolution procedure. Missing Jira or incomplete discussion need not block supported technical conclusions; disclose a gap when the missing evidence could change them.
 
 Missing discussion alone does not create an intent dispute. Name the specific consequential premise that remains unresolved rather than routinely asking an author to reconfirm a supported small change. Evidence omitted from a supplied packet is not evidence that the repository lacks tests, documentation, or another safeguard.
+
+For a second or third review round, inspect available schemas for prior review submissions, reviewer identity, reviewed commit/head, prior inline comments, and later commits. Use authenticated viewer identity only when available; do not guess which reviews belong to the user. Establish the best-supported previous reviewed revision and source, not merely the last commit or report filename. Inspect the delta since that revision, re-expand contracts where it can invalidate earlier conclusions or interact with unchanged code, and run the behavior gate on the current pinned head. If the previous revision is unavailable or no longer an ancestor after a force-push, compare exact revisions where meaningful and disclose the limit; do not pretend a complete incremental review. Earlier material concerns are hypotheses to re-evaluate against current code, never verdicts to inherit. Defer their technical opinions until independent analysis where possible; a bounded regression check may use the old trigger and evidenced contract without supplying the old conclusion.
 
 ## Establish behavior before polish
 
@@ -60,13 +62,17 @@ Stop a trace when inspected ownership/references make another affected contract 
 
 ## Select independent work when useful
 
-The parent retains behavior reconstruction, the gate, correctness judgment, complete impact analysis, candidate validation, severity, acceptance, and synthesis. Select an isolated perspective only when it can materially change the result:
+The parent retains behavior reconstruction, the gate, correctness judgment, complete impact analysis, review-history reconciliation, candidate validation, severity, acceptance, disposition, drafting, and synthesis. Prefer maintained built-in workers when their documented responsibility fits. Select an isolated perspective only when it can materially change the result:
 
-- `review-correctness`: independently reconstruct consequential behavior and try to break it through reachable counterexamples, branch/state/contract analysis, persistence, error or side-effect semantics.
-- `review-design-simplicity`: assess consequential machinery and ownership for concrete maintenance, synchronization, dependency, correctness, or comprehension consequences and evidenced simpler alternatives.
-- `review-test-evidence`: establish what consequential behavior needs evidence and what tests actually prove, including missing regression scenarios that distinguish intended behavior from a plausible alternative.
+- `pr-review-correctness`: independently reconstruct consequential behavior and try to break it through reachable counterexamples, branch/state/contract analysis, persistence, error or side-effect semantics.
+- `pr-review-design-simplicity`: assess consequential machinery and ownership for concrete maintenance, synchronization, dependency, correctness, or comprehension consequences and evidenced simpler alternatives.
+- `pr-review-test-evidence`: establish what consequential behavior needs evidence and what tests actually prove, including missing regression scenarios that distinguish intended behavior from a plausible alternative.
 
-Use current supported built-ins selectively: `explore` for bounded reference tracing and `task` for an inspected, safe existing check under the parent's permissions. Inspect their current capabilities and constrain the task to review-only work. Do not run formatters, installations, or mutating checks incidentally. Do not require a duplicate `code-review`, `/fleet`, a fixed reviewer count, or a technology-specific reviewer. Independent questions may run in parallel against the same pinned target.
+Use `explore` for bounded dependency/consumer tracing and `task` for inspected safe tests/builds/lints under the parent's permissions. Do not run formatters, package installations, mutation, or unrelated commands just because the worker can. Prefer the optional built-in `code-review` for an independent generic defect sweep when its bug/logic/race/security focus adds value and it can safely represent the exact pinned comparison. If it inspects local diffs, require an exact local/disposable checkout; otherwise omit it. It does not own domain-contract reconstruction, behavior matrices, impact, test evidence, design/simplicity, or history. Do not run it and `pr-review-correctness` by default; both need consequential, complementary questions. Do not add wrappers or a mandatory duplicate whole review.
+
+Use `rubber-duck` for a different-model attack on consequential inferences or a substantial final behavior/impact model where useful; request counter-evidence and blind spots, not agreement. Use `security-review` only for a credible security boundary. Built-in severity or confidence values never bypass the parent's candidate-state and impact rules or appear as numeric confidence in output. `general-purpose` has no routine role here because the parent already has broad responsibility. The documented `research` workflow is manual `/research` only; do not depend on automatic invocation. The parent uses available web/documentation retrieval when freshness matters. No `/fleet`, fixed reviewer count, or technology-specific reviewer is required. Independent questions may run in parallel against the same pinned target.
+
+The namespaced custom profiles use CLI `infer: false` to suppress unrelated automatic selection. Deliberately request the named specialist through a supported explicit dispatch, checking the selected profile and tools; never turn inference on to force availability. Some surfaces may expose only manual selection or may not support explicit dispatch with inference disabled. In that case the parent covers the bounded question and discloses only material lost independence. Names do not prove which profile loaded when project/personal definitions collide.
 
 Supply each specialist a self-contained neutral packet: repository identity, PR number, pinned base/head, relevant diff/code, exact local correspondence when valid, requirement/repository evidence with source distinctions, known ambiguity, bounded neutral question, useful impact leads, and the candidate contract below. Do not assume inherited parent instructions or context. Do not include the parent's behavior-gate result, a suspected design/test verdict, or a desired conclusion. Narrowing scope is allowed; anchoring the answer is not.
 
@@ -108,33 +114,71 @@ All severities need evidence. A missing test alone does not prove incorrect impl
 
 Apply this acceptance contract to every user-facing recommendation, including Suggestions and optional notes. Do not bypass it by appending generic requests for tests, documentation, explanatory comments, cleanup, or intent confirmation to a clean review. An absent test in the packet is not a missing-test finding without evidence of a consequential unprotected scenario. A documentation request needs an inspected stale obligation; hypothetical operational/cost effects do not establish one. Keeping the submitted syntax is not a finding.
 
+## Reconcile current review state
+
+After independent technical acceptance/rejection, retrieve current review submissions, threads/replies, resolution state, outdated/current anchors, reviewed commits and relevant earlier rounds through the configured GitHub schemas. Follow pagination far enough to compare all accepted findings with relevant existing discussion. Reuse review-context for substantial reconstruction. If retrieval is incomplete, retain technical results and disclose duplicate-check coverage; do not draft a new inline comment as known-new until its relevant history is established.
+
+Compare issues by contract, trigger, consequence and current code, not identical wording or line numbers. Re-evaluate prior material concerns against the current head as addressed, partially addressed, still applies, superseded/no longer applicable, or unable to establish. A reply is not proof of a fix; a resolved thread is discussion state, not correctness evidence. An outdated anchor does not prove the underlying problem disappeared. Drop a prior verdict defeated by new evidence rather than preserving it for consistency. If this phase supplies new technical evidence, revisit candidate acceptance and the behavior gate before disposition.
+
+Keep the technical finding separate from the publication action:
+
+| Current relationship | Appropriate action |
+| --- | --- |
+| Genuinely new accepted issue | Draft a new inline comment at a truthful current changed-code anchor, or a review-level concern when none exists. |
+| Same issue already covered by an open thread | Retain the technical finding and count its consequence in disposition; normally no new comment. |
+| Prior concern still applies or is partially addressed | Prefer a follow-up in the existing thread, grounded in current-head evidence. |
+| Related thread, materially additive evidence | Draft a reply with the reproduction, additional affected consumer, current-head confirmation or clarified consequence. |
+| Prior concern addressed or superseded | Do not repeat the criticism; acknowledge the verified change naturally in the summary when useful. |
+| Prior state cannot be established | Name the missing premise and avoid a duplicate or unsupported resolution claim. |
+
+Do not manufacture +1 replies to create activity. Concise acknowledgment is useful only when it serves the user's review. Apply the same rule to another reviewer's finding and the user's earlier review. Do not delete a valid technical finding merely because another reviewer already raised it. Record exact thread/comment targets internally for useful replies. If reply capability is absent, preserve reply text and disclose the limitation; never substitute a duplicate inline or top-level comment. Do not resolve threads automatically.
+
+## Recommend a current review disposition
+
+After current findings and discussion are reconciled, recommend APPROVE, COMMENT, or REQUEST CHANGES with a concise reason. This is a readiness judgment, not a finding count or authorization:
+
+- **REQUEST CHANGES:** a VERIFIED current issue makes merging unsafe or incorrect, normally a Blocking finding. A material unresolved premise warrants this only when the uncertainty itself makes safe merge impossible; explain why. The reviewer's unavailable local environment is not automatically the author's blocker.
+- **COMMENT:** no established merge blocker, but Important findings, consequential questions or discussion-worthy concerns merit attention.
+- **APPROVE:** no current Blocking issue or material unresolved concern makes approval irresponsible. Evidence-backed Suggestions can coexist with approval.
+
+Use actual repository/team policy where evidenced; do not invent it. An issue already covered by someone else's thread still affects the recommendation. A prior Request changes does not prevent a current Approve once the relevant fix and current scope are verified. Distinguish incomplete historical retrieval from incomplete behavioral evidence and qualify only the conclusion it limits.
+
 ## Present proportionally and persist substantial reports
 
-A focused review returns concise chat: all accepted findings, or no material findings with the concrete behavior/impact evidence inspected. State FAIL or UNRESOLVED explicitly; a straightforward PASS can be conveyed by the evidence sentence. Create no report artifact unless asked or the review is substantial.
+A focused review returns concise chat: all accepted findings, or no material findings with the behavior/impact evidence inspected, plus the recommended disposition. If no change or consequential question survives acceptance, say no material findings; never populate Suggestion with praise for the submitted code or a recommendation to keep it. Keep a clean result to a short evidence paragraph and any material limitation rather than replaying the procedure or every truth-table row. State FAIL or UNRESOLVED explicitly; a straightforward PASS can be conveyed by the evidence sentence. Create no report artifact unless asked or the review is substantial. Do not force publication-package ceremony on review-only analysis.
 
-For a substantial review, read `{{WORKFLOW_ROOT}}/writing/style.md` and `{{WORKFLOW_ROOT}}/writing/examples/summary.md` if present. Return a structured report containing:
+For a substantial technical report, read `{{WORKFLOW_ROOT}}/writing/style.md` and `{{WORKFLOW_ROOT}}/writing/examples/summary.md` if present. Include target and pinned base/head, reviewed-at UTC timestamp, prior reviewed head and its evidence when this is a re-review, current behavior gate with explanation, concise coverage/checks, all accepted findings grouped by severity with exact anchors and supporting evidence, concise history reconciliation where relevant, findings already covered by threads, and recommended disposition. Include conditional concerns and material gaps only when present. Do not dump threads, copied issue descriptions, rejected candidates, hidden reasoning, raw specialist transcripts or an investigation diary. No synthetic finding IDs in human-facing prose.
 
-1. Target host/repository, PR number, pinned base/head SHAs and comparison.
-2. Behavior-gate result and supported explanation.
-3. Concise coverage: behavior checked, affected contracts traced, warranted design/test concerns, checks/probes actually run or validly reused, consequential unavailable evidence.
-4. All accepted findings grouped by severity, with exact anchors and supporting evidence.
-5. Conditional concerns only when present; material verification gaps only when present.
+Persist each substantial review as a new immutable run outside the reviewed worktree:
 
-Keep hidden reasoning, raw subagent transcripts, rejected candidates, copied Jira/PR descriptions, investigation diaries, and generic praise out. Unavailable tests/runtime/freshness evidence leave useful static conclusions intact, but downgrade the gate or candidate state when that evidence is consequential. Do not call partial coverage comprehensive.
+`{{WORKFLOW_ROOT}}/reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/<review-run-id>.md`
 
-Persist the same complete substantial report outside the reviewed repository at:
+Use the installed [report writer](scripts/persist_report.py) with Python 3.12+ to enforce this filesystem contract. Read its CLI help when needed. Pass the complete current technical report body as UTF-8 standard input and pass the pinned identity, base/head, gate, recommended disposition, verified worktree and installed workflow root as separate arguments. Include `--prior-head` only when evidenced. Do not interpolate review text, refs, or paths into shell code. The helper adds target/timestamp metadata, generates an unambiguous UTC run ID, selects a deterministic numeric suffix on a timestamp collision, writes exclusively without overwriting another report, normalizes UTF-8/LF, and reads back exact bytes. It refuses invalid identity components, path traversal, linked/junction/reparse paths and destinations inside the reviewed worktree. Its checks guard accidental redirection, not a hostile filesystem race.
 
-`{{WORKFLOW_ROOT}}/reviews/<host>/<owner>/<repository>/pr-<number>-<head-sha>.md`
+Use the timestamp and path actually recorded by the helper; do not invent successful persistence. Each run remains distinct even when the PR/head or report body is unchanged. Same-head discussion or external evidence can change the current judgment without a code commit. If the helper, Python, private location or validation is unavailable, retain the complete report in chat and disclose persistence failure; never fall back into the work repository or regenerate an unchecked writer. Runtime reports are user-owned, outside setup's install manifest, and survive uninstall. No review database or aliases are needed.
 
-Validate before filesystem mutation:
+## Draft summary, comments and thread replies
 
-- Derive identity only from the pinned target. Require each host/owner/repository component to match `[A-Za-z0-9_.-]+`; reject `.`/`..`, trailing dots/spaces, reserved Windows device stems (CON, PRN, AUX, NUL, CONIN$, CONOUT$, COM1-9, LPT1-9), separators, drive/absolute paths, control characters, and encoded path substitutions. Require a positive decimal PR number and a full hexadecimal Git object ID of the verified repository format. Do not silently sanitize an invalid identity into another destination.
-- Establish the absolute installed workflow root. Inspect every existing component from the filesystem root through the report leaf without following symlinks, Windows junctions, or other redirecting reparse points; reject any such link, including dangling links. Parents must be directories and an existing leaf a regular file. Verify the final resolved path remains under the workflow's `reviews` directory and outside the resolved reviewed Git worktree. If those conditions cannot be established with available tools, retain chat output rather than write.
-- Create missing directories only after validating the chain, and recheck before writing. Encode the complete report as UTF-8/LF. Reuse an existing file only if its bytes are identical; never overwrite different bytes. Create a new leaf exclusively, without following links, so a collision fails instead of replacing user data. Do not use a replace/force-overwrite operation. These checks guard accidental redirection, not a hostile process racing filesystem changes.
-- Read back and compare the complete bytes before claiming persistence. On collision, inaccessible location, unsafe path, or write/verification failure, preserve the complete result in chat and disclose persistence failure. Never fall back into the work repository. Runtime reports are user-owned and outside setup's install manifest; they survive uninstall.
+Only after technical acceptance and history reconciliation, read `{{WORKFLOW_ROOT}}/writing/style.md` and `{{WORKFLOW_ROOT}}/writing/examples/review.md` to draft human-facing review prose. This calibration covers the review summary, inline comments and thread replies; technical investigation and specialist records remain style-independent. Do not paste a specialist response into a comment or turn Conditional concerns into established defects.
 
-## Drafting and publication boundary
+Use natural, proportional prose: communicate current readiness, mention main concerns without repeating each inline comment, and acknowledge verified prior fixes when useful. A clean approval may need only a short concrete summary. Do not mechanically copy examples, manufacture praise, claim comments were posted when only drafted, or expose internal labels such as B1, I2, AC1 or F7. Stable tool IDs belong in operation targets, never in the prose. Critique code/behavior, not the person; do not infer laziness, incompetence or AI use. State established defects directly, use uncertainty only when real, and ask questions when genuinely inviting discussion.
 
-Discover and accept findings before applying prose style. Only then read `{{WORKFLOW_ROOT}}/writing/style.md` and `{{WORKFLOW_ROOT}}/writing/examples/review.md` if present to draft human-facing PR comments from accepted findings. Keep drafts separate from technical records; do not polish Conditional concerns into established defects.
+When the user is preparing to submit a review, assemble the applicable publication package:
 
-Review never automatically posts comments, submits reviews, approves, requests changes, resolves threads, edits the PR, or changes Jira. For a requested external action, use the existing baseline flow: exact preview of connection, repository, PR, operation, pinned commit/anchor, and complete payload; explicit approval; execute only that action; read back and verify. Refresh target and anchors before publication and renew approval for material changes. Reconcile uncertain outcomes before retrying. Tool availability or silence is not approval, and another agent or shell is not a bypass.
+- Current connection, repository, PR and pinned head; recommended APPROVE / COMMENT / REQUEST CHANGES.
+- Proposed natural-language review summary.
+- New inline comments with current path, line/range/side or supported truthful anchor and complete body.
+- Thread replies with exact thread/comment target and complete body.
+- Accepted findings requiring no new comment because discussion already covers them.
+
+For a focused clean review this can be an Approve recommendation, short summary and no inline comments. Review-level concerns belong in the summary/body when no truthful inline location exists. Keep package mechanics and technical records separate from the publication prose.
+
+## Preview, approve, publish and verify
+
+Review never automatically posts comments, submits reviews, approves, requests changes, resolves threads, edits the PR or changes Jira. A recommended disposition, draft summary or draft comment grants no permission. Apply the existing baseline flow, not a second approval policy.
+
+Inspect current configured GitHub MCP schemas before previewing actions. Do not assume batch submission, inline comments, replies, thread resolution or review events exist. Map the natural recommendation to the actual supported review event (for example REQUEST_CHANGES only if the schema defines it). If unsupported, preserve the accurate draft and state the limitation; do not simulate it with another operation or shell publication.
+
+Preview the complete intended operation set: review submission event/body, each new inline comment, each thread reply and their exact target, payload and effects. If multiple calls are required, show them all before explicit approval for that exact package. Refresh current head, anchors and thread state immediately before execution. If head changed, stop, refresh affected evidence and the package, and obtain approval again. If another comment now covers the issue or a thread/anchor changed materially, reconcile and renew the affected preview/approval instead of publishing stale duplicates.
+
+Execute only approved operations, then read back the review state, body, inline anchors and replies. Report partial success accurately. Reconcile an uncertain write before retrying; do not duplicate a review/comment after an ambiguous response. Tool availability, silence or another agent is not an approval bypass.

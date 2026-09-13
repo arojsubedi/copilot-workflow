@@ -393,6 +393,8 @@ class InstallTests(unittest.TestCase):
             ".copilot/settings.json": b"Existing settings",
             ".vscode/settings.json": b"Editor configuration",
             ".copilot/other-workflow/unrelated.md": b"Unowned neighbor",
+            ".copilot/agents/personal.agent.md": b"Personal agent",
+            ".copilot/engineering-workflow/reviews/git.test/team/repo/pr-1-head.md": b"User report",
         }
         for relative, data in preserved.items():
             path = self.home / relative
@@ -733,6 +735,153 @@ class InstallTests(unittest.TestCase):
         result, output = self.status()
         self.assertEqual(result, 0)
         self.assertIn(f"Skills: {expected} discovered in source", output)
+        self.assertFalse(self.home.exists())
+
+    def test_agents_are_discovered_rendered_adopted_updated_and_reported(self):
+        agents = self.source / "agents"
+        fixture = agents / "fixture.agent.md"
+        fixture.write_bytes(b"\xef\xbb\xbf---\r\nname: fixture\r\ndescription: Fixture.\r\n"
+                            b'tools: ["read", "search"]\r\n---\r\n{{BASELINE_PATH}}\r\n{{WORKFLOW_ROOT}}\r\n')
+        (agents / "notes.md").write_bytes(b"Not a profile")
+        (agents / "ignored.agent.MD").write_bytes(b"Wrong extension")
+        (agents / "nested").mkdir()
+        (agents / "nested/ignored.agent.md").write_bytes(b"Not direct")
+        definitions = sorted(agents.glob("*.agent.md", case_sensitive=True))
+        relatives = {".copilot/agents/" + p.name for p in definitions}
+        self.assertEqual(self.status()[0], 0)
+        self.assertIn(f"Agents: {len(definitions)} discovered in source; missing", self.status()[1])
+        self.assertFalse(self.home.exists())
+        expected = (f"---\nname: fixture\ndescription: Fixture.\n"
+                    f'tools: ["read", "search"]\n---\n'
+                    f"{self.home.as_posix()}/.copilot/copilot-instructions.md\n"
+                    f"{self.home.as_posix()}/.copilot/engineering-workflow\n").encode("utf-8")
+        target = self.home / ".copilot/agents/fixture.agent.md"
+        target.parent.mkdir(parents=True)
+        target.write_bytes(expected)
+        self.assertEqual(self.install(), 0)  # Adopt exact bytes without prior ownership.
+        self.assertEqual(target.read_bytes(), expected)
+        manifest = self.home / SETUP.MANIFEST_RELATIVE
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        self.assertEqual({p for p in entries if p.startswith(".copilot/agents/")}, relatives)
+        self.assertEqual(entries[".copilot/agents/fixture.agent.md"], SETUP.digest(expected))
+        self.assertEqual(self.install(check=True), 0)
+        self.assertIn(f"Agents: {len(definitions)} discovered in source; installed", self.status()[1])
+        fixture.write_bytes(fixture.read_bytes() + b"Updated source\r\n")
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        self.assertEqual(self.install(check=True), 1)
+        self.assertIn(f"Agents: {len(definitions)} discovered in source; out of date", self.status()[1])
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(target.read_bytes(), expected + b"Updated source\n")
+        self.assertEqual(self.install(check=True), 0)
+
+    def test_stale_agents_missing_targets_and_user_reports_survive_lifecycle(self):
+        self.install()
+        definitions = sorted((self.source / "agents").glob("*.agent.md"))
+        self.assertTrue(definitions)
+        relatives = [".copilot/agents/" + path.name for path in definitions]
+        preserved = {
+            ".copilot/agents/personal.agent.md": b"Personal agent",
+            ".copilot/engineering-workflow/reviews/git.test/team/repo/pr-1-head.md": b"User report",
+        }
+        for relative, data in preserved.items():
+            target = self.home / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        originals = {p: p.read_bytes() for p in definitions}
+        for path in definitions:
+            path.unlink()
+        (self.home / relatives[0]).unlink()  # An absent stale target still needs manifest cleanup.
+        self.assertEqual(self.install(check=True), 1)
+        self.assertIn("Agents: 0 discovered in source; not configured", self.status()[1])
+        self.assertEqual(self.install(), 0)
+        entries = json.loads((self.home / SETUP.MANIFEST_RELATIVE).read_text(encoding="utf-8"))
+        for relative in relatives:
+            self.assertNotIn(relative, entries)
+            self.assertFalse((self.home / relative).exists())
+        for relative in preserved:
+            self.assertNotIn(relative, entries)
+        self.assertEqual(self.install(check=True), 0)
+        self.assertEqual(self.uninstall(), 0)
+        for path, data in originals.items():
+            path.write_bytes(data)
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        for relative, data in preserved.items():
+            self.assertEqual((self.home / relative).read_bytes(), data)
+
+    def test_active_and_stale_agent_conflicts_refuse_all_mutation(self):
+        self.install()
+        source = next((self.source / "agents").glob("*.agent.md"))
+        relative = ".copilot/agents/" + source.name
+        target = self.home / relative
+        target.write_bytes(b"Preserve local agent changes")
+        # Ensure a different desired update is also pending when preflight fails.
+        style = self.source / "writing/style.md"
+        style.write_bytes(style.read_bytes() + b"\nNew source guidance\n")
+        for stale in (False, True):
+            if stale:
+                source.unlink()
+            with self.subTest(stale=stale):
+                before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+                for check in (False, True):
+                    with self.assertRaisesRegex(ValueError, "No files changed"):
+                        self.install(check=check)
+                with self.assertRaisesRegex(ValueError, "No files removed"):
+                    self.uninstall()
+                result, output = self.status()
+                self.assertEqual(result, 0)
+                self.assertIn("Installation: conflict", output)
+                self.assertIn(str(target), output)
+                if not stale:
+                    count = len(list((self.source / "agents").glob("*.agent.md")))
+                    self.assertIn(f"Agents: {count} discovered in source; conflict", output)
+                self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+
+    def test_new_agent_collision_blocks_fresh_install(self):
+        source = next((self.source / "agents").glob("*.agent.md"))
+        target = self.home / ".copilot/agents" / source.name
+        target.parent.mkdir(parents=True)
+        target.write_bytes(b"Unowned existing agent")
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        for check in (False, True):
+            with self.assertRaisesRegex(ValueError, "No files changed"):
+                self.install(check=check)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+
+    def test_manifest_rejects_nonprofile_agent_paths_and_runtime_reports(self):
+        self.install()
+        manifest = self.home / SETUP.MANIFEST_RELATIVE
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        for relative in (".copilot/agents/settings.json", ".copilot/agents/nested/x.agent.md",
+                         ".copilot/agents/../other.agent.md", ".copilot/agents/x.agent.MD",
+                         ".copilot/engineering-workflow/reviews/report.md",
+                         ".copilot/engineering-workflow/Reviews/report.md"):
+            with self.subTest(relative=relative):
+                manifest.write_text(json.dumps({**entries, relative: "0" * 64}), encoding="utf-8")
+                before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+                for operation in (self.install, self.uninstall, self.status):
+                    with self.assertRaises(ValueError):
+                        operation()
+                self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+
+    def test_agent_source_collisions_and_links_are_rejected(self):
+        agents = self.source / "agents"
+        original_glob = Path.glob
+        for first, second in (("review", "REVIEW"), ("caf\u00e9", "cafe\u0301")):
+            def paths(directory, pattern, **kwargs):
+                if directory == agents:
+                    return [agents / (first + ".agent.md"), agents / (second + ".agent.md")]
+                return original_glob(directory, pattern, **kwargs)
+            with patch.object(Path, "glob", autospec=True, side_effect=paths), \
+                    patch.object(SETUP, "render", return_value=b"content"):
+                with self.assertRaisesRegex(ValueError, "collide across platforms"):
+                    self.install()
+        for linked in (agents, next(agents.glob("*.agent.md")), self.home / ".copilot/agents"):
+            with patch.object(Path, "is_junction", autospec=True,
+                              side_effect=lambda path: path == linked):
+                with self.assertRaisesRegex(ValueError, "linked install path"):
+                    self.install()
         self.assertFalse(self.home.exists())
 
     def test_status_manifest_error_uses_exit_two_without_mutation(self):

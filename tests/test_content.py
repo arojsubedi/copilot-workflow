@@ -24,7 +24,7 @@ def headings(text):
 class ContentTests(unittest.TestCase):
     def test_shipped_local_markdown_links_and_anchors_resolve(self):
         paths = [SOURCE / "README.md", SOURCE / "DESIGN.md", SOURCE / "projects/project.example.md"]
-        for folder in ("docs", "instructions", "skills", "writing"):
+        for folder in ("docs", "instructions", "skills", "writing", "agents", "tests"):
             paths.extend((SOURCE / folder).rglob("*.md"))
         for path in paths:
             text = path.read_text(encoding="utf-8-sig")
@@ -69,8 +69,51 @@ class ContentTests(unittest.TestCase):
                         target = (home / destination).parent.joinpath(link).resolve()
                         self.assertIn(target.relative_to(home.resolve()).as_posix(), files)
             for destination, data in files.items():
-                self.assertNotIn(b"{{WORKFLOW_ROOT}}", data, destination)
-                self.assertNotIn(b"{{BASELINE_PATH}}", data, destination)
+                self.assertNotIn(b"{{", data, destination)
+
+    def test_agent_metadata_tools_and_rendered_references(self):
+        agents = sorted((SOURCE / "agents").glob("*.agent.md", case_sensitive=True))
+        self.assertTrue(agents)
+        self.assertEqual(set(agents), set((SOURCE / "agents").rglob("*.md")))
+        with tempfile.TemporaryDirectory(prefix="workflow-agents-content-") as temporary:
+            home = Path(temporary).resolve()
+            files = SETUP.build_files(SOURCE, home, report=False)
+            for agent in agents:
+                with self.subTest(agent=agent.name):
+                    header = re.fullmatch(r"---\n(.*?)\n---\n(.+)",
+                                          agent.read_text(encoding="utf-8-sig"), re.DOTALL)
+                    self.assertIsNotNone(header)
+                    fields = dict(line.split(": ", 1) for line in header[1].splitlines())
+                    self.assertEqual(len(fields), len(header[1].splitlines()))
+                    self.assertEqual(set(fields), {"name", "description", "tools"})
+                    self.assertRegex(agent.name, r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*\.agent\.md$")
+                    self.assertEqual(fields["name"] + ".agent.md", agent.name)
+                    self.assertTrue(fields["description"].strip())
+                    self.assertLessEqual(len(fields["description"]), 1024)
+                    allowed = json.loads(fields["tools"])
+                    self.assertTrue(allowed)
+                    self.assertEqual(len(allowed), len(set(allowed)))
+                    self.assertLessEqual(set(allowed), {"read", "search"})
+                    rendered = files[".copilot/agents/" + agent.name].decode("utf-8")
+                    self.assertNotIn("{{", rendered)
+                    for state in ("VERIFIED", "CONDITIONAL", "REJECTED"):
+                        self.assertIn(state, header[2])
+                    self.assertIn("counter-evidence", header[2])
+                    self.assertIn("no source or external mutation", header[2])
+
+    def test_pr_review_retains_parent_owned_gate_and_optional_delegation(self):
+        skill = (SOURCE / "skills/pr-review/SKILL.md").read_text(encoding="utf-8")
+        for state in ("PASS", "FAIL", "UNRESOLVED", "VERIFIED", "CONDITIONAL", "REJECTED"):
+            self.assertRegex(skill, r"\b" + state + r"\b")
+        self.assertIn("zero custom subagents", skill)
+        self.assertIn("parent owns the impact map", skill)
+        self.assertIn("revise it before final output", skill)
+        self.assertIn("Do not include the parent's behavior-gate result", skill)
+        self.assertIn("missing high-value regression scenarios", skill)
+        self.assertIn("explicit approval", skill)
+        self.assertIn("outside the resolved reviewed Git worktree", skill)
+        self.assertIn("Create a new leaf exclusively", skill)
+        self.assertIn("never overwrite different bytes", skill)
 
     def test_mcp_example_is_valid_source_only_reference(self):
         example = SOURCE / "mcp/mcp.example.json"

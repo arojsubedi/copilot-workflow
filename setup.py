@@ -153,6 +153,10 @@ def build_files(source, home, report=True):
     for path in sorted((source / "skills").rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source / "skills").as_posix()
         files[".copilot/skills/" + relative] = render(path, root)
+    agents = safe_target(source.resolve(), "agents")
+    for path in sorted(agents.glob("*.agent.md", case_sensitive=True)):
+        safe_target(source.resolve(), "agents/" + path.name)
+        files[".copilot/agents/" + path.name] = render(path, root)
     # Default macOS/Windows volumes may fold case or Unicode normalization.
     # Fail everywhere rather than produce different file sets on each machine.
     seen = {}
@@ -238,8 +242,11 @@ def load_manifest(home):
                 ".copilot/copilot-instructions.md",
                 ".copilot/instructions/engineering-workflow.instructions.md",
             )
-            or relative.startswith(".copilot/engineering-workflow/")
+            or (relative.startswith(".copilot/engineering-workflow/")
+                and not relative.casefold().startswith(".copilot/engineering-workflow/reviews/")
+                and relative.casefold() != ".copilot/engineering-workflow/reviews")
             or relative.startswith(".copilot/skills/")
+            or re.fullmatch(r"\.copilot/agents/[^/]+\.agent\.md", relative)
         )
         for relative, owned_hash in previous.items()
     ):
@@ -406,6 +413,10 @@ def status(source, home):
         relative for relative in skill_files
         if re.fullmatch(r"\.copilot/skills/[^/]+/SKILL\.md", relative)
     ]
+    agent_files = sorted(
+        relative for relative in files
+        if re.fullmatch(r"\.copilot/agents/[^/]+\.agent\.md", relative)
+    )
     project_files = sorted(
         relative for relative in files
         if relative.startswith(".copilot/engineering-workflow/projects/")
@@ -431,6 +442,10 @@ def status(source, home):
     print(
         f"Skills: {len(skill_definitions)} discovered in source; "
         + component_status(inspection, skill_files)
+    )
+    print(
+        f"Agents: {len(agent_files)} discovered in source; "
+        + component_status(inspection, agent_files)
     )
     project_summary = f"Projects: {len(project_names)} READY in source"
     if project_names:

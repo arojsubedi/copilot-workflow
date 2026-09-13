@@ -45,6 +45,8 @@ Normal engineering questions use the general defaults and repository evidence. S
 
 The review-context workflow is deliberately separate from implementation review. It reconstructs what people discussed on an existing PR and, when relevant, linked Jira history. It remains read-only and distinguishes discussion claims from facts observed in code.
 
+[PR review](docs/pr-review.md) is a specialized task subsystem owned by its own skill. It assesses an existing PR's behavior and affected contracts, with review depth and independent perspectives selected according to the evidence. Its workflow and output are described in that document.
+
 ## Writing and external changes
 
 Writing guidance is loaded only for meaningful prose, along with the one example that matches the artifact. Repository templates and live required fields take priority over default presentation; project profiles add only genuine private overrides.

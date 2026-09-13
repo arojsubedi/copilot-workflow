@@ -10,6 +10,7 @@ It is designed for day-to-day software work where the repository and connected t
 - Planning substantial, ambiguous, or cross-cutting work.
 - Implementing changes around the repository's existing contracts and responsibilities.
 - Reviewing a meaningful implementation pass before treating it as complete.
+- [Reviewing an existing PR](docs/pr-review.md) for supported behavior, affected contracts, and evidence-backed findings.
 - Preparing Jira stories from current project requirements.
 - Preparing pull requests, including appropriate reviewers.
 - Catching up on an existing PR's review discussion and relevant Jira history without changing either system.
@@ -51,6 +52,7 @@ If Copilot keeps doing something you dislike, change the owner of that behavior 
 | How planning works | [`skills/planning/SKILL.md`](skills/planning/SKILL.md) |
 | How implementation works | [`skills/implementation/SKILL.md`](skills/implementation/SKILL.md) |
 | Implementation self-review | [`skills/implementation-review/SKILL.md`](skills/implementation-review/SKILL.md) |
+| PR review | [`skills/pr-review/SKILL.md`](skills/pr-review/SKILL.md) and [its architecture](docs/pr-review.md) |
 | PR preparation | [`skills/prepare-pr/SKILL.md`](skills/prepare-pr/SKILL.md) |
 | Jira story preparation | [`skills/jira-story/SKILL.md`](skills/jira-story/SKILL.md) |
 | PR and Jira review catch-up | [`skills/review-context/SKILL.md`](skills/review-context/SKILL.md) |

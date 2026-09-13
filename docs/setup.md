@@ -50,9 +50,11 @@ If you use the Copilot app, paste the full generated personal instruction file i
 
 For a disposable test destination, use `python setup.py --home <directory>`. That option installs files there but does not make Copilot discover the alternate location.
 
+Setup discovers direct `agents/*.agent.md` profiles and installs them to `.copilot/agents/` under the selected home. This is the documented personal Copilot CLI agent location. After installation, start a fresh CLI session and inspect its skills and agent picker; verify `pr-review` and invoke each installed reviewer on a read-only fixture. Other clients need their own skill/agent discovery check. Missing delegated-agent support falls back to the main review skill. See [PR review](pr-review.md) for the workflow and [GitHub's CLI layout](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference) for discovery paths.
+
 ## Inspect status
 
-Run `python setup.py --status` for a human-readable overview of the source clone, installation location and state, installed guidance, dynamically discovered skills, and READY projects. It also reports that Copilot app instructions are manual because setup cannot inspect whether the app currently loaded them.
+Run `python setup.py --status` for a human-readable overview of the source clone, installation location and state, installed guidance, dynamically discovered skill and agent counts/states, and READY projects. It also reports that Copilot app instructions are manual because setup cannot inspect whether the app currently loaded them.
 
 Status is read-only and performs no installation, repair, deletion, or manifest update. It returns `0` when it can report the state, including not installed, update available, or local conflict. Invalid or unreadable source configuration or ownership data returns `2`.
 
@@ -78,6 +80,8 @@ python setup.py --uninstall
 ```
 
 Uninstall first checks every file recorded as belonging to this workflow. Missing files count as already removed. Unchanged managed files are removed, along with the workflow's ownership record. If any managed file has been edited or replaced, uninstall stops before removing anything and reports the conflict. Unrelated files and neighboring Copilot configuration are never removed.
+
+Agent profiles use the same ownership protection on install, update, check, stale cleanup, and uninstall. A locally modified active or stale managed agent blocks mutation; unrelated personal agents remain untouched. Runtime reports under `.copilot/engineering-workflow/reviews/` are user-owned, excluded from the manifest, and survive uninstall.
 
 Setup cannot remove instructions pasted into the Copilot app. Clear that UI field manually after uninstalling if you used it for this workflow.
 

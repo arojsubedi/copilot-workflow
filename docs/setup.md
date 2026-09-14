@@ -50,9 +50,17 @@ If you use the Copilot app, paste the full generated personal instruction file i
 
 For a disposable test destination, use `python setup.py --home <directory>`. That option installs files there but does not make Copilot discover the alternate location.
 
-Setup discovers direct `agents/*.agent.md` profiles and installs them to `.copilot/agents/` under the selected home. This is the documented personal Copilot CLI agent location. After installation, start a fresh CLI session and inspect its skills and agent picker; verify `pr-review` and invoke each installed reviewer on a read-only fixture. Other clients need their own skill/agent discovery check. Missing delegated-agent support falls back to the main review skill. See [PR review](pr-review.md) for the workflow and [GitHub's CLI layout](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference) for discovery paths.
+Setup discovers direct `agents/*.agent.md` profiles and installs them to `.copilot/agents/` under the selected home. This is the documented personal Copilot CLI agent location. After installation, start a fresh CLI session and inspect its skills and agent picker; verify `eng-pr-review` and invoke each installed reviewer on a read-only fixture. Other clients need their own skill/agent discovery check. Missing delegated-agent support falls back to the main review skill. See [PR review](pr-review.md) for the workflow and [GitHub's CLI layout](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference) for discovery paths.
 
 Internal reviewer names use the `pr-review-` prefix and CLI `infer: false` to prevent unrelated automatic selection. Check explicit named dispatch in the client you use; if it is unavailable with inference disabled, the parent handles the question. Supplementary Markdown under each skill, including nested `references/`, is installed recursively with rendered paths and normal ownership protection. The report writer is installed with the skill and needs Python 3.12+ only. Substantial reports are separate immutable runs under `engineering-workflow/reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/`, so the same head can be reviewed again after discussion changes.
+
+## Verify skill selection
+
+The personal task skills use `eng-` names, including `/eng-planning`, `/eng-implementation`, `/eng-implementation-review`, `/eng-pr-review`, `/eng-review-context`, `/eng-prepare-pr`, and `/eng-jira-story`. Use these names for explicit invocation. No generic aliases are installed. CLI project skills take priority over duplicate personal names; the namespace avoids collisions with generic repository workflows but does not defeat an exact same-name project definition. [CLI skill precedence](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#skill-locations)
+
+For troubleshooting or consequential planning/review, start a fresh session or run `/skills reload`, then `/skills info eng-planning` or `/skills info eng-pr-review`. Check that the selected path is the expected personal `~/.copilot/skills/eng-.../SKILL.md`. `copilot skill list --json` also exposes source/path/enabled state. Installation alone does not prove loading, and `/instructions` separately inspects combined instruction files. Other clients require their own discovery controls; this is not a ritual for every prompt. [Skill inspection](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
+
+For native CLI Plan mode, `/session plan` displays the session's active plan. The [planning workflow](planning.md) owns its relationship to explicitly requested repository plans and implementation authorization; setup does not manage either artifact.
 
 ## Inspect status
 
@@ -85,7 +93,7 @@ Uninstall first checks every file recorded as belonging to this workflow. Missin
 
 Agent profiles and supplementary skill resources use the same ownership protection on install, update, check, stale cleanup, and uninstall. A locally modified active or stale managed agent blocks mutation; unrelated personal agents remain untouched. Runtime reports under `.copilot/engineering-workflow/reviews/` are user-owned, excluded from the manifest, and survive uninstall.
 
-Renamed managed profiles use ordinary stale-file cleanup: setup removes an unchanged old destination and installs its current source name, without aliases. A locally edited old destination blocks the entire update until its changes are preserved and the conflict is resolved.
+Renamed managed skills, resources and profiles use ordinary stale-file cleanup: setup removes an unchanged old destination and installs its current source name, without aliases. A locally edited old destination blocks the entire update until its changes are preserved and the conflict is resolved.
 
 Setup cannot remove instructions pasted into the Copilot app. Clear that UI field manually after uninstalling if you used it for this workflow.
 

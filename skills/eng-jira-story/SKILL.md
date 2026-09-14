@@ -1,5 +1,5 @@
 ---
-name: jira-story
+name: eng-jira-story
 description: Draft or create one Jira story. Use for story preparation or creation, including for a named project; not for implementing an issue.
 ---
 

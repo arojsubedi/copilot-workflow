@@ -57,6 +57,7 @@ class ContentTests(unittest.TestCase):
                 self.assertEqual(len(fields), len(header[1].splitlines()))
                 self.assertEqual(set(fields), {"name", "description"})
                 self.assertEqual(fields["name"], skill.parent.name)
+                self.assertTrue(fields["name"].startswith("eng-"))
                 self.assertRegex(fields["name"], r"^[a-z]+(?:-[a-z]+)*$")
                 description = fields["description"].strip('"').strip()
                 self.assertTrue(description)
@@ -104,7 +105,7 @@ class ContentTests(unittest.TestCase):
                     self.assertIn("no source or external mutation", header[2])
 
     def test_pr_review_retains_parent_owned_gate_and_optional_delegation(self):
-        skill = (SOURCE / "skills/pr-review/SKILL.md").read_text(encoding="utf-8")
+        skill = (SOURCE / "skills/eng-pr-review/SKILL.md").read_text(encoding="utf-8")
         for state in ("PASS", "FAIL", "UNRESOLVED", "VERIFIED", "CONDITIONAL", "REJECTED"):
             self.assertRegex(skill, r"\b" + state + r"\b")
         self.assertIn("zero custom subagents", skill)
@@ -119,10 +120,107 @@ class ContentTests(unittest.TestCase):
         self.assertIn("COMMENT", skill)
         self.assertIn("REQUEST CHANGES", skill)
         self.assertIn("Do not delete a valid technical finding", skill)
-        self.assertIn("A reply is not proof of a fix", skill)
-        self.assertIn("summary, inline comments and thread replies", skill)
-        self.assertIn("pr-<number>/<head-sha>/<review-run-id>.md", skill)
-        self.assertIn("scripts/persist_report.py", skill)
+        # Conditional procedures own these rules; the entrypoint routes to them.
+        for resource, contracts in {
+            "review-state": ("A reply is not proof of a fix",),
+            "publication": ("summary, inline comments and thread replies",),
+            "reporting": ("pr-<number>/<head-sha>/<review-run-id>.md", "scripts/persist_report.py"),
+        }.items():
+            self.assertIn(f"references/{resource}.md", skill)
+            procedure = (SOURCE / f"skills/eng-pr-review/references/{resource}.md").read_text(encoding="utf-8")
+            for contract in contracts:
+                self.assertIn(contract, procedure)
+
+    def test_planning_preserves_research_convergence_and_authorization(self):
+        skill = (SOURCE / "skills/eng-planning/SKILL.md").read_text(encoding="utf-8")
+        stages = ("Research before decomposition", "Derive the provisional approach",
+                  "Validate the proposal", "Close coverage and refresh evidence",
+                  "Persist and converge in place", "Stop and hand off")
+        positions = [skill.index("## " + stage) for stage in stages]
+        self.assertEqual(positions, sorted(positions))
+        for contract in (r"user-proposed.*candidate", r"callers.*contracts/invariants.*tests",
+                         r"functional-first sequencing", r"current proposal, never the history",
+                         r"Planning does not authorize implementation", r"same plan"):
+            self.assertRegex(skill, contract)
+
+    def test_planning_validation_routes_by_consequence_and_separates_roles(self):
+        skill = (SOURCE / "skills/eng-planning/SKILL.md").read_text(encoding="utf-8")
+        gate = skill.split("## Validate the proposal\n", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("references/validation.md", gate)
+        for contract in (r"first draft is a hypothesis", r"Tiny.*No subagent is required",
+                         r"Meaningful.*Read \[validation\]", r"Consequential design commitment",
+                         r"not diff size", r"provisional approach never mentioned",
+                         r"parent owns the final proposal", r"Large mechanically determined"):
+            self.assertRegex(gate, contract)
+        procedure = (SOURCE / "skills/eng-planning/references/validation.md").read_text(encoding="utf-8")
+        for contract in (r"`explore`.*factual questions", r"fresh `general-purpose` context",
+                         r"Do not send the draft plan", r"no persisted accessible draft",
+                         r"Do not forward the full parent conversation", r"Only after.*result returns",
+                         r"worker saw the draft.*anchored critique", r"Disclose.*missing independent",
+                         r"Rubber-duck.*not an authority or sole validator", r"never model voting",
+                         r"numeric confidence", r"reject.*reuse.*violates another contract",
+                         r"Mutation protection", r"Draft exclusion", r"Read-only prose alone is insufficient"):
+            self.assertRegex(procedure, contract)
+
+    def test_planning_artifact_closure_and_refresh_have_runtime_owners(self):
+        skill = (SOURCE / "skills/eng-planning/SKILL.md").read_text(encoding="utf-8")
+        for contract in (r"session's managed plan", r"explicit repository-local plan request",
+                         r"artifact-only write/transfer", r"do not write.*native session plan",
+                         r"Every requested behavior.*implementation owner/path.*verification",
+                         r"omitted material requirement.*blocks readiness",
+                         r"unchanged HEAD or status alone", r"repeat only the validation"):
+            self.assertRegex(skill, contract)
+        implementation = (SOURCE / "skills/eng-implementation/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("actual active surface", implementation)
+        self.assertIn("eng-planning/SKILL.md", implementation)
+
+    def test_review_routes_history_before_analysis_and_reconciles_opinions_late(self):
+        skill = (SOURCE / "skills/eng-pr-review/SKILL.md").read_text(encoding="utf-8")
+        stages = ("Pin the target", "Probe review state", "Understand and map material change",
+                  "Falsify candidates", "Reconcile, recommend and present")
+        positions = [skill.index("## " + stage) for stage in stages]
+        self.assertEqual(positions, sorted(positions))
+        probe = skill.split("## Probe review state\n", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("references/review-state.md", probe)
+        for contract in (r"even without viewer identity", r"Other reviewers' threads alone",
+                         r"neutral metadata", r"before choosing the comparison"):
+            self.assertRegex(probe, contract)
+        state = (SOURCE / "skills/eng-pr-review/references/review-state.md").read_text(encoding="utf-8")
+        for contract in (r"First review with other reviewers", r"Re-review with a new head",
+                         r"Follow-up on the same head.*Do not invent a code delta",
+                         r"History unknown", r"force-push", r"local prior analysis",
+                         r"never a submitted GitHub review", r"A delta alone cannot establish"):
+            self.assertRegex(state, contract)
+        for contract in (r"known repository-standard check", r"without recursively auditing",
+                         r"Inspect the consequential execution chain", r"Do not blindly execute",
+                         r"recheck PR identity and base/head"):
+            self.assertRegex(skill, contract)
+
+    def test_explicit_personal_skill_invocations_use_discoverable_names(self):
+        skills = {p.parent.name for p in (SOURCE / "skills").glob("*/SKILL.md")}
+        setup_doc = (SOURCE / "docs/setup.md").read_text(encoding="utf-8")
+        for name in skills:
+            self.assertIn("/" + name, setup_doc)
+        self.assertIn("/skills info eng-planning", setup_doc)
+        self.assertIn("/skills info eng-pr-review", setup_doc)
+        for folder in ("docs", "writing", "tests", "skills"):
+            for path in (SOURCE / folder).rglob("*.md"):
+                for name in re.findall(r"(?<![\w/-])/(eng-[a-z-]+)\b", path.read_text(encoding="utf-8")):
+                    if name.endswith("-"):
+                        continue  # Documented namespace placeholder, not invocation.
+                    self.assertIn(name, skills, str(path))
+
+    def test_planning_architecture_and_semantic_cases_are_discoverable(self):
+        for name in ("README.md", "DESIGN.md"):
+            self.assertIn("](docs/planning.md)", (SOURCE / name).read_text(encoding="utf-8"))
+        architecture = (SOURCE / "docs/planning.md").read_text(encoding="utf-8")
+        for target in ("../skills/eng-planning/SKILL.md", "../skills/eng-planning/references/validation.md",
+                       "../tests/planning-quality-cases.md", "../writing/examples/plan.md"):
+            self.assertIn("](" + target + ")", architecture)
+        cases = (SOURCE / "tests/planning-quality-cases.md").read_text(encoding="utf-8")
+        self.assertIn("manual evaluation guidance", cases)
+        # Packaging and links are mechanical; scenario outcomes require evaluation.
+        self.assertNotIn("planning", " ".join(p.name for p in (SOURCE / "agents").glob("*.agent.md")))
 
     def test_publication_examples_cover_review_artifacts_without_internal_ids(self):
         examples = (SOURCE / "writing/examples/review.md").read_text(encoding="utf-8")

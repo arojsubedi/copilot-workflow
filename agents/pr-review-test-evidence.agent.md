@@ -1,6 +1,6 @@
 ---
 name: pr-review-test-evidence
-description: Internal pr-review worker. Determine what consequential behavior needs evidence and what PR tests actually establish, including missing high-value regression scenarios. Return technical candidates only.
+description: Internal eng-pr-review worker. Determine what consequential behavior needs evidence and what PR tests actually establish, including missing high-value regression scenarios. Return technical candidates only.
 tools: ["read", "search"]
 infer: false
 ---

@@ -1,15 +1,15 @@
 ---
-name: implementation
+name: eng-implementation
 description: Construct a meaningful code change from repository evidence and contracts. Use for implementation; not for tiny edits, explanations, or review-only requests.
 ---
 
 # Implementation
 
-Construct the requested change coherently in this codebase. Work from the current request and inspected code; a separate spec or plan file is not required. This skill guides construction. [Implementation review](../implementation-review/SKILL.md) challenges the resulting pass.
+Construct the requested change coherently in this codebase. Work from the current request and inspected code; a separate spec or plan file is not required. This skill guides construction. [Implementation review](../eng-implementation-review/SKILL.md) challenges the resulting pass.
 
 Read `{{BASELINE_PATH}}` if its full text is absent from the visible context (read it if unsure). It owns engineering judgment, project selection, and authorization. Reuse current evidence rather than restarting discovery.
 
-When a current plan is supplied, read it and confirm its target repository and implementation authorization. A planning request or plan acceptance alone does not authorize coding. Use the plan's intent, owners, dependencies, and verification alongside current code; refresh evidence that can invalidate it without repeating all discovery. Resolve routine details autonomously. If new evidence consequentially invalidates a contract, owner, scope, or step, pause dependent implementation, reconcile the decision through [planning](../planning/SKILL.md), and update the same artifact before continuing. Preserve unrelated plan edits; do not create a competing specification or follow a stale plan literally.
+When a current plan is supplied, read the validated proposal from its actual active surface: native session plan, explicit destination, repository plan, or identified in-chat proposal. Confirm its target repository, current artifact/source, and implementation authorization; do not require a repository copy or consume another plan merely because it is named plan.md. A planning request or plan acceptance alone does not authorize coding. Use the plan's intent, owners, dependencies, and verification alongside current code; refresh evidence that can invalidate it without repeating all discovery. Resolve routine details autonomously. If new evidence consequentially invalidates a contract, owner, scope, or step, pause dependent implementation, reconcile the decision through [planning](../eng-planning/SKILL.md), and update the same artifact before continuing. Preserve unrelated plan edits; do not create a competing specification or follow a stale plan literally.
 
 ## Learn the affected subsystem
 
@@ -51,7 +51,7 @@ Once the functional implementation is coherent, complete a dedicated test/verifi
 - Add missing meaningful behavioral/regression coverage at existing useful test boundaries. Derive expected outcomes from requirements or independent examples, including relevant edge/failure cases, rather than mirroring the implementation.
 - Run focused tests and broader required repository gates; inspect results and distinguish stale test assumptions from implementation defects. Fix genuine production bugs revealed by verification and recheck affected behavior. Reuse still-valid results rather than duplicating runs.
 
-Use `implementation-review` after meaningful passes, with the current phase clear; it can run during functional construction. After test reconciliation and verification, review the completed implementation, adjust within authorized scope, and recheck affected behavior. Deferred maintenance must be resolved before completion: missing meaningful coverage, unresolved broken tests, or required checks still due remain gaps, not a completed feature. Carry forward actual results and unavailable verification honestly; following this procedure is not proof of correctness.
+Use `eng-implementation-review` after meaningful passes, with the current phase clear; it can run during functional construction. After test reconciliation and verification, review the completed implementation, adjust within authorized scope, and recheck affected behavior. Deferred maintenance must be resolved before completion: missing meaningful coverage, unresolved broken tests, or required checks still due remain gaps, not a completed feature. Carry forward actual results and unavailable verification honestly; following this procedure is not proof of correctness.
 
 ## Mutation boundary
 

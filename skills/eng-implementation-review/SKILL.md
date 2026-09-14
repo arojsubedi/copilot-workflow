@@ -1,5 +1,5 @@
 ---
-name: implementation-review
+name: eng-implementation-review
 description: Assess a meaningful implementation pass before it continues or finishes. Use for implementation self-review; not for full PR review or tiny edits.
 ---
 
@@ -34,7 +34,7 @@ Simplification must preserve correctness, readable control flow, diagnostics, ev
 
 ## Verify and report
 
-Establish from the current request, plan if present, and implementation state whether this pass is functional construction or has reached test/verification. Apply [implementation's functional-first policy](../implementation/SKILL.md#functional-first-implementation): before test reconciliation, intentionally deferred coverage and expected stale mocks, fixtures, assertions, or wiring are remaining work, not defects by themselves. Do not demand an already-green suite or report missing tests solely because final coverage is deferred. Still report evidence of genuine production defects, preserved-contract violations, bad implementation assumptions exposed by coverage, and test/integration failures that block meaningful functional progress. Investigate the cause; phase labels alone do not establish that a failure is stale.
+Establish from the current request, plan if present, and implementation state whether this pass is functional construction or has reached test/verification. Apply [implementation's functional-first policy](../eng-implementation/SKILL.md#functional-first-implementation): before test reconciliation, intentionally deferred coverage and expected stale mocks, fixtures, assertions, or wiring are remaining work, not defects by themselves. Do not demand an already-green suite or report missing tests solely because final coverage is deferred. Still report evidence of genuine production defects, preserved-contract violations, bad implementation assumptions exposed by coverage, and test/integration failures that block meaningful functional progress. Investigate the cause; phase labels alone do not establish that a failure is stale.
 
 At test/verification and completion, apply full test-quality scrutiny. Inspect tests for observable behavior with independently justified expectations. For fixes, check that the regression case detects the original defect when practical. Look for stale assertions, meaningful missing failure/edge cases, tautological assertions, implementation-mirroring expectations, or mocks that remove the behavior being tested. Preserve assertions for unchanged contracts; update stale assumptions only for legitimate behavior changes. Prefer useful existing coverage; do not add redundant tests for trivial edits or weaken assertions to obtain green output. Missing meaningful coverage or unresolved broken tests are now verification gaps; functional-first sequencing never excuses finishing with them.
 
@@ -48,4 +48,4 @@ Report only useful findings, evidence for continuing or completing this pass, ch
 
 A review-only request permits inspection and safe local verification, including ordinary disposable test/build outputs. It does not authorize source fixes, staging, commits, discarding work, or publication. During an already authorized implementation, fix findings within that scope and recheck affected behavior. Apply the baseline's approval rules before any check or action with external, destructive, or production effects.
 
-`prepare-pr` may reuse this assessment or request a bounded reassessment against its pinned comparison, in review-only mode. Use its requirement evidence and comparison without rerouting projects. It owns publication, reviewer selection, and remote verification; this skill supplies implementation evidence, not integration approval or specialist certification. Load writing guidance through the baseline when authoring a substantial review.
+`eng-prepare-pr` may reuse this assessment or request a bounded reassessment against its pinned comparison, in review-only mode. Use its requirement evidence and comparison without rerouting projects. It owns publication, reviewer selection, and remote verification; this skill supplies implementation evidence, not integration approval or specialist certification. Load writing guidance through the baseline when authoring a substantial review.

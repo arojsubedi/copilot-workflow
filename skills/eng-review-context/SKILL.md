@@ -1,5 +1,5 @@
 ---
-name: review-context
+name: eng-review-context
 description: Summarize an existing PR's intent and discussion, including linked Jira context when relevant. Use for PR review catch-up; read-only and not a code review.
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: pr-review-design-simplicity
-description: Internal pr-review worker. Assess whether consequential PR machinery and ownership form a sound, proportionate solution. Require concrete engineering consequences and evidenced alternatives.
+description: Internal eng-pr-review worker. Assess whether consequential PR machinery and ownership form a sound, proportionate solution. Require concrete engineering consequences and evidenced alternatives.
 tools: ["read", "search"]
 infer: false
 ---

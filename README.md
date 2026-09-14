@@ -7,7 +7,7 @@ It is designed for day-to-day software work where the repository and connected t
 ## What it helps with
 
 - Grounding normal engineering questions and changes in the current repository.
-- Planning substantial, ambiguous, or cross-cutting work.
+- [Planning substantial, ambiguous, or cross-cutting work](docs/planning.md).
 - Implementing changes around the repository's existing contracts and responsibilities.
 - Reviewing a meaningful implementation pass before treating it as complete.
 - [Reviewing an existing PR](docs/pr-review.md) for supported behavior, affected contracts, and evidence-backed findings.
@@ -21,6 +21,8 @@ It is designed for day-to-day software work where the repository and connected t
 ## How it works
 
 General engineering guidance applies across repositories. When a task needs a focused workflow, Copilot loads the matching skill. When a task depends on a configured project, it identifies that project and reads only its private profile. Meaningful prose also uses the writing style and the example for that kind of output.
+
+Personal task skills use the `eng-` namespace, such as `/eng-planning` and `/eng-pr-review`. See [skill discovery](docs/setup.md#verify-skill-selection) when checking which source a client selected.
 
 The repository, its own instructions, and current GitHub or Jira data still provide the facts. Personal configuration supplements that evidence; it does not replace it. See [DESIGN.md](DESIGN.md) for the conceptual model.
 
@@ -49,13 +51,13 @@ If Copilot keeps doing something you dislike, change the owner of that behavior 
 | If you want to change... | Edit... |
 | --- | --- |
 | General engineering judgment | [`instructions/baseline.md`](instructions/baseline.md) |
-| How planning works | [`skills/planning/SKILL.md`](skills/planning/SKILL.md) |
-| How implementation works | [`skills/implementation/SKILL.md`](skills/implementation/SKILL.md) |
-| Implementation self-review | [`skills/implementation-review/SKILL.md`](skills/implementation-review/SKILL.md) |
-| PR review | [`skills/pr-review/SKILL.md`](skills/pr-review/SKILL.md) and [its architecture](docs/pr-review.md) |
-| PR preparation | [`skills/prepare-pr/SKILL.md`](skills/prepare-pr/SKILL.md) |
-| Jira story preparation | [`skills/jira-story/SKILL.md`](skills/jira-story/SKILL.md) |
-| PR and Jira review catch-up | [`skills/review-context/SKILL.md`](skills/review-context/SKILL.md) |
+| How planning works | [`skills/eng-planning/SKILL.md`](skills/eng-planning/SKILL.md) |
+| How implementation works | [`skills/eng-implementation/SKILL.md`](skills/eng-implementation/SKILL.md) |
+| Implementation self-review | [`skills/eng-implementation-review/SKILL.md`](skills/eng-implementation-review/SKILL.md) |
+| PR review | [`skills/eng-pr-review/SKILL.md`](skills/eng-pr-review/SKILL.md) and [its architecture](docs/pr-review.md) |
+| PR preparation | [`skills/eng-prepare-pr/SKILL.md`](skills/eng-prepare-pr/SKILL.md) |
+| Jira story preparation | [`skills/eng-jira-story/SKILL.md`](skills/eng-jira-story/SKILL.md) |
+| PR and Jira review catch-up | [`skills/eng-review-context/SKILL.md`](skills/eng-review-context/SKILL.md) |
 | Tone or writing voice | [`writing/style.md`](writing/style.md) and its [matching example](writing/style.md#examples) |
 | GitHub, Jira, or reviewer facts for one project | That local file under `projects/` |
 | Installation behavior | [`setup.py`](setup.py) and [the setup guide](docs/setup.md) |

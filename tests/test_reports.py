@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from test_setup import SOURCE
 
-SCRIPT = SOURCE / "skills/pr-review/scripts/persist_report.py"
+SCRIPT = SOURCE / "skills/eng-pr-review/scripts/persist_report.py"
 SPEC = importlib.util.spec_from_file_location("review_report", SCRIPT)
 REPORT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(REPORT)

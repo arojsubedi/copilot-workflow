@@ -25,7 +25,7 @@ Current repository + current GitHub/Jira data provide the evidence
 | Part | Responsibility |
 | --- | --- |
 | [Engineering defaults](instructions/baseline.md) | General judgment, proportionate verification, project selection, writing triggers, and approval before external changes. |
-| Task skills, such as [planning](skills/planning/SKILL.md) | Focused procedures for planning, implementation, self-review, Jira stories, PR preparation, and PR discussion catch-up. A skill is loaded only when its description matches the task. |
+| Task skills, such as [planning](skills/eng-planning/SKILL.md) | Focused procedures for planning, implementation, self-review, Jira stories, PR preparation, and PR discussion catch-up. A skill is loaded only when its description matches the task. |
 | Local project profiles | Private identities and conventions that cannot reliably come from the repository or live tools, such as connection names and preferred reviewers. |
 | [Writing guidance](writing/style.md) | Shared voice and presentation rules. One matching fictional example calibrates a substantial artifact. |
 | Work repository and tools | Current code, contracts, tests, repository instructions, templates, Git state, GitHub data, Jira data, and tool schemas. These remain the factual source of truth. |
@@ -46,6 +46,8 @@ Normal engineering questions use the general defaults and repository evidence. S
 The review-context workflow is deliberately separate from implementation review. It reconstructs what people discussed on an existing PR and, when relevant, linked Jira history. It remains read-only and distinguishes discussion claims from facts observed in code.
 
 [PR review](docs/pr-review.md) is a specialized task subsystem owned by its own skill. It assesses an existing PR's behavior and affected contracts, with review depth and independent perspectives selected according to the evidence. Its workflow and output are described in that document.
+
+[Planning](docs/planning.md) is a specialized subsystem owned by the existing planning skill. It grounds and validates a current implementation proposal before handoff; its architecture and authorization boundary are described in that document.
 
 ## Writing and external changes
 

@@ -135,8 +135,9 @@ def build_files(source, home, report=True):
     Package runtime Markdown and Python skill scripts. Human docs stay in source.
     Forward slashes serialize paths for Markdown/JSON, not shell execution.
     """
+    source = source.resolve()
     root = home / ".copilot" / "engineering-workflow"
-    baseline = render(source / "instructions" / "baseline.md", root)
+    baseline = render(safe_target(source, "instructions/baseline.md"), root)
     files = {
         ".copilot/copilot-instructions.md": baseline,
         ".copilot/instructions/engineering-workflow.instructions.md": (
@@ -147,8 +148,10 @@ def build_files(source, home, report=True):
         ).encode("utf-8"),
     }
     files.update(project_files(source, report))
-    for path in sorted((source / "writing").rglob("*.md", case_sensitive=True)):
+    writing = safe_target(source, "writing")
+    for path in sorted(writing.rglob("*.md", case_sensitive=True)):
         relative = path.relative_to(source).as_posix()
+        safe_target(source, relative)
         files[".copilot/engineering-workflow/" + relative] = render(path, root)
     skills = safe_target(source.resolve(), "skills")
     for path in sorted(skills.rglob("*.md", case_sensitive=True)):

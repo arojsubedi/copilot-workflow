@@ -428,14 +428,14 @@ class InstallTests(unittest.TestCase):
 
     def test_locally_edited_skill_blocks_update(self):
         self.install()
-        target = self.home / ".copilot/skills/prepare-pr/SKILL.md"
+        target = self.home / ".copilot/skills/eng-prepare-pr/SKILL.md"
         target.write_text("A local edit to preserve", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "locally edited"):
             self.install()
         self.assertEqual(target.read_text(), "A local edit to preserve")
 
     def test_existing_same_name_skill_blocks_fresh_install_without_writes(self):
-        target = self.home / ".copilot/skills/implementation/SKILL.md"
+        target = self.home / ".copilot/skills/eng-implementation/SKILL.md"
         target.parent.mkdir(parents=True)
         target.write_bytes(b"Existing third-party implementation skill")
         before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
@@ -512,11 +512,11 @@ class InstallTests(unittest.TestCase):
         self.install(source)
         style = source / "writing/style.md"
         style.write_text(style.read_text(encoding="utf-8") + "\nPrefer concrete verbs.\n", encoding="utf-8")
-        review = source / "skills/implementation-review/SKILL.md"
+        review = source / "skills/eng-implementation-review/SKILL.md"
         review.write_text(review.read_text(encoding="utf-8") + "\nReview fixture update.\n", encoding="utf-8")
         baseline = source / "instructions/baseline.md"
         baseline.write_text(baseline.read_text(encoding="utf-8") + "\nBaseline fixture update.\n", encoding="utf-8")
-        untouched = self.home / ".copilot/skills/jira-story/SKILL.md"
+        untouched = self.home / ".copilot/skills/eng-jira-story/SKILL.md"
         untouched_bytes = untouched.read_bytes()
         example = source / "writing/examples/installation-fixture.md"
         example.write_bytes(b"Illustrative installation fixture\n")
@@ -524,7 +524,7 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(self.install(source), 0)
         installed = self.home / ".copilot/engineering-workflow/writing/style.md"
         self.assertTrue(installed.read_text(encoding="utf-8").endswith("Prefer concrete verbs.\n"))
-        installed_review = self.home / ".copilot/skills/implementation-review/SKILL.md"
+        installed_review = self.home / ".copilot/skills/eng-implementation-review/SKILL.md"
         self.assertTrue(installed_review.read_bytes().endswith(b"Review fixture update.\n"))
         for relative in (".copilot/copilot-instructions.md",):
             with self.subTest(relative=relative):
@@ -536,7 +536,7 @@ class InstallTests(unittest.TestCase):
 
     def test_removed_skills_and_writing_follow_manifest_ownership(self):
         self.install()
-        paths = {"skills/jira-story/SKILL.md": ".copilot/skills/jira-story/SKILL.md",
+        paths = {"skills/eng-jira-story/SKILL.md": ".copilot/skills/eng-jira-story/SKILL.md",
                  "writing/examples/pr.md": ".copilot/engineering-workflow/writing/examples/pr.md"}
         for source, installed in paths.items():
             (self.source / source).unlink()
@@ -560,7 +560,7 @@ class InstallTests(unittest.TestCase):
     def test_paths_render_and_surface_adapters_reference_shared_baseline(self):
         self.install()
         root = self.home / ".copilot/engineering-workflow"
-        skill = (self.home / ".copilot/skills/jira-story/SKILL.md").read_text(encoding="utf-8")
+        skill = (self.home / ".copilot/skills/eng-jira-story/SKILL.md").read_text(encoding="utf-8")
         self.assertIn(root.as_posix() + "/projects/index.md", skill)
         self.assertNotIn("{{WORKFLOW_ROOT}}", skill)
         baseline = self.home / ".copilot/copilot-instructions.md"
@@ -569,9 +569,161 @@ class InstallTests(unittest.TestCase):
         self.assertIn(baseline.as_posix(), adapter)
         self.assertFalse((root / "README.md").exists())
         self.assertFalse((root / "DESIGN.md").exists())
-        review = self.home / ".copilot/skills/implementation-review/SKILL.md"
+        review = self.home / ".copilot/skills/eng-implementation-review/SKILL.md"
         self.assertTrue(review.is_file())
         self.assertIn(baseline.as_posix(), review.read_text(encoding="utf-8"))
+
+    def test_skill_namespace_update_protects_conflicts_and_removes_owned_old_paths(self):
+        legacy = self.root / "legacy-distribution"
+        copy_source(legacy)
+        definitions = sorted((legacy / "skills").glob("eng-*/SKILL.md"))
+        self.assertTrue(definitions)
+        for definition in definitions:
+            directory = definition.parent
+            old_name = directory.name.removeprefix("eng-")
+            renamed = directory.with_name(old_name)
+            self.assertEqual(renamed.parent.resolve(), (legacy / "skills").resolve())
+            directory.rename(renamed)
+            skill = renamed / "SKILL.md"
+            skill.write_text(skill.read_text(encoding="utf-8").replace(
+                "name: eng-" + old_name, "name: " + old_name), encoding="utf-8")
+        self.assertEqual(self.install(legacy), 0)
+        manifest = self.home / SETUP.MANIFEST_RELATIVE
+        old_entries = json.loads(manifest.read_text(encoding="utf-8"))
+        obsolete = {path for path in old_entries if path.startswith(".copilot/skills/")}
+        preserved = {
+            ".copilot/skills/personal/SKILL.md": b"Personal skill",
+            "work/project/.github/skills/planning/SKILL.md": b"Project planning",
+            "work/project/.github/copilot-instructions.md": b"Project instructions",
+        }
+        for relative, content in preserved.items():
+            target = self.home / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+        # Both an entrypoint and a nested resource/script must block stale cleanup.
+        conflict_paths = [next(path for path in sorted(obsolete) if path.endswith("/SKILL.md")),
+                          next(path for path in sorted(obsolete) if "/references/" in path),
+                          next(path for path in sorted(obsolete) if "/scripts/" in path)]
+        for relative in conflict_paths:
+            target = self.home / relative
+            original = target.read_bytes()
+            target.write_bytes(b"Preserve old installed local edit")
+            before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+            for check in (False, True):
+                with self.assertRaisesRegex(ValueError, "stale and no longer matches"):
+                    self.install(check=check)
+            self.assertIn("Installation: conflict", self.status()[1])
+            with self.assertRaisesRegex(ValueError, "No files removed"):
+                self.uninstall()
+            self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+            target.write_bytes(original)
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        self.assertEqual(self.install(check=True), 1)
+        self.assertIn("safe update available", self.status()[1])
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        for relative in obsolete:
+            self.assertNotIn(relative, entries)
+            self.assertFalse((self.home / relative).exists())
+        desired = SETUP.build_files(self.source, self.home, report=False)
+        for relative, content in desired.items():
+            self.assertEqual((self.home / relative).read_bytes(), content)
+        count = len(list((self.source / "skills").glob("*/SKILL.md")))
+        self.assertIn(f"Skills: {count} discovered in source; installed", self.status()[1])
+        self.assertEqual(self.uninstall(), 0)
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        for relative, content in preserved.items():
+            self.assertEqual((self.home / relative).read_bytes(), content)
+
+    def test_baseline_and_writing_source_redirection_is_refused_before_read_or_write(self):
+        self.install()
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        original_read = Path.read_text
+        for relative in ("instructions", "instructions/baseline.md", "writing",
+                         "writing/style.md", "writing/examples", "writing/examples/plan.md"):
+            linked = self.source / relative
+
+            def reject_redirected_read(path, *args, **kwargs):
+                if path == linked or linked in path.parents:
+                    raise AssertionError("Read redirected source before validation")
+                return original_read(path, *args, **kwargs)
+
+            with self.subTest(relative=relative), \
+                    patch.object(Path, "is_junction", autospec=True, side_effect=lambda path: path == linked), \
+                    patch.object(Path, "read_text", autospec=True, side_effect=reject_redirected_read):
+                for operation in (self.install, lambda: self.install(check=True), self.status):
+                    with self.assertRaisesRegex(ValueError, "linked install path"):
+                        operation()
+                self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+
+    def test_supplementary_markdown_follows_install_update_stale_and_uninstall(self):
+        resources = sorted((self.source / "skills").glob("*/references/**/*.md"))
+        self.assertTrue(resources)
+        originals = {path: path.read_bytes() for path in resources}
+        relatives = {path: ".copilot/" + path.relative_to(self.source).as_posix() for path in resources}
+        self.assertEqual(self.install(), 0)
+        for source, relative in relatives.items():
+            expected = SETUP.render(source, self.home / ".copilot/engineering-workflow")
+            self.assertEqual((self.home / relative).read_bytes(), expected)
+            source.write_bytes(originals[source] + b"\nResource update: {{BASELINE_PATH}}\n")
+        before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+        self.assertEqual(self.install(check=True), 1)
+        self.assertIn("out of date", self.status()[1])
+        self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        manifest = self.home / SETUP.MANIFEST_RELATIVE
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        for source, relative in relatives.items():
+            expected = SETUP.render(source, self.home / ".copilot/engineering-workflow")
+            self.assertEqual((self.home / relative).read_bytes(), expected)
+            self.assertEqual(entries[relative], SETUP.digest(expected))
+            source.unlink()
+        neighbor = (self.home / next(iter(relatives.values()))).with_name("personal.md")
+        neighbor.write_bytes(b"Unowned reference")
+        self.assertEqual(self.install(check=True), 1)
+        self.assertIn("safe update available", self.status()[1])
+        self.assertEqual(self.install(), 0)
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+        for relative in relatives.values():
+            self.assertFalse((self.home / relative).exists())
+            self.assertNotIn(relative, entries)
+        for source, content in originals.items():
+            source.write_bytes(content)
+        self.assertEqual(self.install(), 0)
+        self.assertEqual(self.install(check=True), 0)
+        self.assertEqual(self.uninstall(), 0)
+        for relative in relatives.values():
+            self.assertFalse((self.home / relative).exists())
+        self.assertEqual(neighbor.read_bytes(), b"Unowned reference")
+
+    def test_each_active_and_stale_supplementary_edit_blocks_mutation(self):
+        resources = sorted((self.source / "skills").glob("*/references/**/*.md"))
+        self.assertTrue(resources)
+        self.install()
+        for source in resources:
+            original = source.read_bytes()
+            target = self.home / ".copilot" / source.relative_to(self.source)
+            installed = target.read_bytes()
+            target.write_bytes(b"Preserve local reference edit")
+            for stale in (False, True):
+                if stale:
+                    source.unlink()
+                with self.subTest(resource=source.relative_to(self.source), stale=stale):
+                    before = {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()}
+                    for check in (False, True):
+                        with self.assertRaisesRegex(ValueError, "No files changed"):
+                            self.install(check=check)
+                    with self.assertRaisesRegex(ValueError, "No files removed"):
+                        self.uninstall()
+                    self.assertIn("Installation: conflict", self.status()[1])
+                    self.assertEqual(before, {p: p.read_bytes() for p in self.home.rglob("*") if p.is_file()})
+            source.write_bytes(original)
+            target.write_bytes(installed)
+        self.assertEqual(self.install(check=True), 0)
 
     def test_path_escape_is_rejected(self):
         self.home.mkdir()
@@ -624,7 +776,7 @@ class InstallTests(unittest.TestCase):
         self.install()
         manifest = self.home / ".copilot/engineering-workflow/install-manifest.json"
         entries = json.loads(manifest.read_text(encoding="utf-8"))
-        already_absent = self.home / ".copilot/skills/planning/SKILL.md"
+        already_absent = self.home / ".copilot/skills/eng-planning/SKILL.md"
         already_absent.unlink()
         unrelated = self.home / ".copilot/skills/unrelated/SKILL.md"
         unrelated.parent.mkdir(parents=True)
@@ -924,11 +1076,11 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(self.install(check=True), 0)
 
     def test_runtime_script_is_rendered_owned_and_protected(self):
-        script = self.source / "skills/pr-review/scripts/persist_report.py"
+        script = self.source / "skills/eng-pr-review/scripts/persist_report.py"
         original = script.read_text(encoding="utf-8")
         script.write_bytes(b"\xef\xbb\xbf" + original.replace("\n", "\r\n").encode("utf-8"))
         self.install()
-        relative = ".copilot/skills/pr-review/scripts/persist_report.py"
+        relative = ".copilot/skills/eng-pr-review/scripts/persist_report.py"
         target = self.home / relative
         self.assertEqual(target.read_bytes(), original.encode("utf-8"))
         entries = json.loads((self.home / SETUP.MANIFEST_RELATIVE).read_text(encoding="utf-8"))

@@ -1,9 +1,13 @@
 # PR review
 
-The [pr-review skill](../skills/pr-review/SKILL.md) assesses an existing PR against a pinned repository, base and head. It establishes supported behavior, accounts for the material change surface, follows affected contracts and reconciles current discussion before recommending a review disposition. Contributor code and external systems remain unchanged. A focused review can finish in chat with zero custom subagents.
+The [eng-pr-review skill](../skills/eng-pr-review/SKILL.md) assesses an existing PR against a pinned repository, base and head. It establishes supported behavior, accounts for the material change surface, follows affected contracts and reconciles current discussion before recommending a review disposition. Contributor code and external systems remain unchanged. A focused review can finish in chat with zero custom subagents.
 
 ```text
-Pin exact target + establish trust
+Pin exact target
+        |
+Neutral review-state probe -> select comparison/refresh scope
+        |
+Establish trust
         |
 Understand intent + map material change
         |
@@ -26,6 +30,22 @@ Current disposition + proportional output
         Exact preview -> explicit approval -> refresh/write/read back
 ```
 
+## Detect first review and follow-up
+
+Immediately after pinning the PR, the parent probes only enough submission/viewer metadata, reviewed commits, thread/history presence, and ordering to select the lifecycle. Field selection avoids review bodies and verdicts where supported; bundled opinions are kept out of neutral technical packets. Explicit re-review/follow-up wording establishes later-round intent even without authenticated viewer identity. Missing identity/history is an unknown baseline, not evidence of no prior review.
+
+| State | Review scope |
+| --- | --- |
+| First review | Independently assess the current pinned PR comparison. |
+| First review with other reviewers' discussion | Perform the same independent first analysis, then reconcile comments late to suppress duplicates. |
+| Re-review with new head | Establish the prior reviewed revision, inspect its delta, re-expand affected unchanged contracts, and establish current gate/coverage before reconciling old concerns. |
+| Same-head follow-up | Inspect new evidence/discussion and revalidate affected current code/conclusions; do not invent a code delta. |
+| History unknown | Review current code sufficiently for the requested conclusion and disclose baseline/history/deduplication limits. |
+
+Another reviewer's comments do not make this review a re-review. A non-ancestor or unavailable prior head limits incremental claims after force-push; it does not prevent current-head analysis. An unchanged head without available previous analysis does not supply reusable technical conclusions. Full discussion reconciliation remains late, while independently evidenced contract/trigger facts can focus early regression checks.
+
+For an explicit follow-up whose local analysis baseline cannot be established through GitHub, an identified private report can supply neutral technical context after exact identity/revision checks. It is local prior analysis, never proof of a submitted review or publication. Current code/remote evidence can defeat it, and actual GitHub history still owns deduplication. No report index is maintained. [Review-state procedure](../skills/eng-pr-review/references/review-state.md)
+
 ## Behavior, impact and coverage
 
 The parent distinguishes requested behavior, discussion claims, repository obligations, observed code/test behavior, inference and ambiguity. Jira, the PR description and submitted tests are each evidence, not automatic truth. Early discussion supplies material intent and contract clarification. Reviewer conclusions enter later, after independent technical acceptance; new technical evidence can still change the judgment.
@@ -42,7 +62,7 @@ Before a substantial review claims completeness, the parent closes coverage acro
 
 ## Execution and instruction trust
 
-Useful test/build commands can execute reviewed code. The parent inspects entry points, consequential invoked code/hooks, effects and access before choosing trusted local execution, suitable isolation, pinned CI evidence or static reasoning. A disposable checkout establishes correspondence, not process isolation. Unknown scripts, arbitrary review-only package installs, repository shell configuration and unnecessary credential/network access are not accepted merely to obtain a test result. Unsafe or unavailable verification limits only the conclusions that depend on it.
+Known repository-standard checks can reuse established trust in the ordinary trusted developer/CI environment when definitions, hooks, lifecycle scripts, execution configuration and relevant trust boundaries are materially unchanged. They need proportionate execution, not recursive auditing of every dependency. New or changed scripts, startup/configuration, dependency execution, credentials/network requirements or unfamiliar executables require consequential execution-chain inspection. A disposable checkout establishes correspondence, not process isolation. Blind untrusted execution remains prohibited; unavailable verification limits the conclusions that depend on it.
 
 Sandbox guarantees depend on the actual client, enabled state and effective filesystem/network/credential policy. The workflow neither manages a sandbox nor assumes one is enabled. GitHub documents local sandboxing as optional and experimental; network and Git authentication can remain available, and built-in file tools apply policy in-process rather than under OS isolation. Check current support and policy before relying on it. [Sandbox behavior](https://docs.github.com/en/copilot/concepts/about-cloud-and-local-sandboxes), [sandbox configuration](https://docs.github.com/en/copilot/how-tos/cloud-and-local-sandboxes/configuring-local-sandbox-settings)
 
@@ -66,15 +86,15 @@ One user-facing skill owns the engine, severity and disposition. Its internal pr
 
 | Resource | Trigger and responsibility |
 | --- | --- |
-| [review-state.md](../skills/pr-review/references/review-state.md) | Later rounds, existing threads or substantial history: previous baseline, current-head revalidation and duplicate suppression. |
-| [publication.md](../skills/pr-review/references/publication.md) | Drafting/submitting summaries, inline comments and replies: writing calibration, exact operations, refresh and readback. |
-| [reporting.md](../skills/pr-review/references/reporting.md) | Substantial or requested private reports: complete current state and immutable persistence. |
+| [review-state.md](../skills/eng-pr-review/references/review-state.md) | Early for later-round/unknown-baseline routing; late for discussion: prior comparison, same-head refresh and duplicate suppression. |
+| [publication.md](../skills/eng-pr-review/references/publication.md) | Drafting/submitting summaries, inline comments and replies: writing calibration, exact operations, refresh and readback. |
+| [reporting.md](../skills/eng-pr-review/references/reporting.md) | Substantial or requested private reports: complete current state and immutable persistence. |
 
 Supplementary Markdown and scripts are supported skill resources. Discovery does not prove that the applicable procedure was read. [GitHub's skill resource support](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)
 
-Re-review establishes an evidenced prior revision and reviewer identity where available, inspects the delta and re-expands affected unchanged contracts. It reruns the current behavior gate and coverage closure. [Review context](../skills/review-context/SKILL.md) reconstructs substantial discussion without becoming the technical review. Replies, resolved threads and outdated anchors are discussion state, not proof of a fix. Valid already-threaded findings still affect disposition but usually need no new comment; replies need additive value. Verified fixes are not criticized again.
+Re-review establishes an evidenced prior revision and reviewer identity where available, inspects the delta and re-expands affected unchanged contracts. It reruns the current behavior gate and coverage closure. [Review context](../skills/eng-review-context/SKILL.md) reconstructs substantial discussion without becoming the technical review. Replies, resolved threads and outdated anchors are discussion state, not proof of a fix. Valid already-threaded findings still affect disposition but usually need no new comment; replies need additive value. Verified fixes are not criticized again.
 
-The current recommendation is **REQUEST CHANGES** for merge-unsafe behavior, **COMMENT** for consequential discussion or partial review without an established blocker, or **APPROVE** when material coverage is closed and no blocker/material unresolved concern makes approval irresponsible. Actual team policy can matter; counts, prior verdicts and the reviewer's unavailable environment do not set disposition automatically.
+Before claiming a current disposition or writing its report, the parent rechecks target base/head metadata and refreshes affected evidence/coverage if it changed, or qualifies the result to its pinned comparison. The current recommendation is **REQUEST CHANGES** for merge-unsafe behavior, **COMMENT** for consequential discussion or partial review without an established blocker, or **APPROVE** when material coverage is closed and no blocker/material unresolved concern makes approval irresponsible. Actual team policy can matter; counts, prior verdicts and the reviewer's unavailable environment do not set disposition automatically.
 
 Focused output is concise chat without unsolicited artifacts or submission ceremony. Substantial reports include target/UTC timestamp, base/head, evidenced prior head, behavior gate, coverage closure/gaps, findings, concise history reconciliation and disposition. Reports use summary calibration and preserve complete current evidence without diaries, copied threads or raw transcripts. The installed report writer creates immutable UTC runs at `reviews/<host>/<owner>/<repository>/pr-<number>/<head-sha>/<review-run-id>.md` under the private workflow root, outside the reviewed repository, with collision suffixes, safe paths and exact UTF-8/LF readback. Reports remain user-owned through uninstall; failures retain the full result in chat.
 

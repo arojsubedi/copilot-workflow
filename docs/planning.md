@@ -2,6 +2,8 @@
 
 The [eng-planning skill](../skills/eng-planning/SKILL.md) turns a requested outcome into a repository-grounded implementation proposal. It owns research, design validation, sequencing, and convergence in one current plan. A coherent first draft is provisional: validation must be able to discover a better existing owner even when the draft never mentioned it.
 
+Copilot may select this skill from the request and its description. Explicit `/eng-planning` invocation makes the workflow choice unambiguous; [source inspection](setup.md#verify-skill-selection) is optional. The sequence below describes the workflow once loaded.
+
 ```text
 Requested outcome + target/evidence snapshot
         |
@@ -43,6 +45,8 @@ For a consequential ownership/design question, the parent keeps its provisional 
 Safe dispatch requires both effective mutation restrictions and draft exclusion. Native Plan mode provides inherited project-edit protection; outside it, a fresh context needs effective read-only tools/permissions. Instructions alone provide neither a permission boundary nor filesystem isolation. An existing or automatically persisted draft must be excluded by the actual context/read scope, including session history. If that cannot be established, the parent retains repository falsification, discloses missing independent discovery, and does not claim equivalent validation. A worker that saw the draft supplied anchored critique.
 
 After evidence work and any independent comparison, `rubber-duck` may see the provisional proposal and a discovered alternative to challenge framing, ownership, scope, scenarios, and verification. It supplies complementary-model critique when useful, subject to supported Claude/GPT sessions and critic availability. It is never the sole validator. [Rubber-duck support](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/rubber-duck)
+
+The parent reconciles a relevant critique already in context, including one initiated by Copilot, instead of requesting an equivalent pass. Another challenge needs a materially different question/state, a proposal change that makes the critique stale, or a plausible ability to change the conclusion. No persistent critique state is needed.
 
 The parent resolves disputed assumptions against requirements and repository contracts. Agreement counts and numeric confidence cannot defeat evidence; proposed reuse is rejected when its semantics violate a contract. Routine decisions remain autonomous. Only consequential questions that inspection cannot resolve go to the user.
 

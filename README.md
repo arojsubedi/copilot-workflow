@@ -20,9 +20,9 @@ It is designed for day-to-day software work where the repository and connected t
 
 ## How it works
 
-General engineering guidance applies across repositories. When a task needs a focused workflow, Copilot loads the matching skill. When a task depends on a configured project, it identifies that project and reads only its private profile. Meaningful prose also uses the writing style and the example for that kind of output.
+General engineering guidance applies across repositories. Copilot may select a focused skill based on the request and its description; automatic selection is not guaranteed. When a task depends on a configured project, the workflow directs it to identify that project and read only its private profile. Meaningful prose also uses the writing style and the example for that kind of output.
 
-Personal task skills use the `eng-` namespace, such as `/eng-planning` and `/eng-pr-review`. See [skill discovery](docs/setup.md#verify-skill-selection) when checking which source a client selected.
+Personal task skills use the `eng-` namespace. Explicitly invoke `/eng-planning` or `/eng-pr-review` when you want to make the workflow choice unambiguous. See [skill discovery](docs/setup.md#verify-skill-selection) for optional source verification and troubleshooting.
 
 The repository, its own instructions, and current GitHub or Jira data still provide the facts. Personal configuration supplements that evidence; it does not replace it. See [DESIGN.md](DESIGN.md) for the conceptual model.
 

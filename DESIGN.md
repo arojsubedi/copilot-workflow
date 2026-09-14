@@ -8,8 +8,9 @@ User asks a question or requests work
              v
 General engineering defaults apply
              |
-             +-- Does the task need a specialized workflow?
-             |       -> load the matching skill
+             +-- Specialized workflow
+             |       -> Copilot may select a skill from request + description
+             |       -> explicit /eng-... invocation selects the desired skill
              |
              +-- Does the task depend on a configured project?
              |       -> identify the project and load only its profile
@@ -25,7 +26,7 @@ Current repository + current GitHub/Jira data provide the evidence
 | Part | Responsibility |
 | --- | --- |
 | [Engineering defaults](instructions/baseline.md) | General judgment, proportionate verification, project selection, writing triggers, and approval before external changes. |
-| Task skills, such as [planning](skills/eng-planning/SKILL.md) | Focused procedures for planning, implementation, self-review, Jira stories, PR preparation, and PR discussion catch-up. A skill is loaded only when its description matches the task. |
+| Task skills, such as [planning](skills/eng-planning/SKILL.md) | Focused procedures for planning, implementation, self-review, Jira stories, PR preparation, and PR discussion catch-up. Copilot may select a skill from the request and its description, or the user can explicitly invoke it. |
 | Local project profiles | Private identities and conventions that cannot reliably come from the repository or live tools, such as connection names and preferred reviewers. |
 | [Writing guidance](writing/style.md) | Shared voice and presentation rules. One matching fictional example calibrates a substantial artifact. |
 | Work repository and tools | Current code, contracts, tests, repository instructions, templates, Git state, GitHub data, Jira data, and tool schemas. These remain the factual source of truth. |
@@ -41,7 +42,7 @@ The profile supplies stable private facts. It does not cache repository commands
 
 ## Specialized workflows
 
-Normal engineering questions use the general defaults and repository evidence. Substantial planning, implementation, implementation self-review, Jira story preparation, PR preparation, and PR discussion catch-up each have their own skill. Their narrow descriptions let Copilot select the relevant procedure without loading every procedure into every task.
+Normal engineering questions use the general defaults and repository evidence. Substantial planning, implementation, implementation self-review, Jira story preparation, PR preparation, and PR discussion catch-up each have their own skill. Their narrow descriptions guide Copilot's selection without guaranteeing that a normal request loads the intended procedure. Explicit invocation makes the workflow choice unambiguous; [source inspection](docs/setup.md#verify-skill-selection) is available when needed. [GitHub's skill selection and invocation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills#using-agent-skills)
 
 The review-context workflow is deliberately separate from implementation review. It reconstructs what people discussed on an existing PR and, when relevant, linked Jira history. It remains read-only and distinguishes discussion claims from facts observed in code.
 

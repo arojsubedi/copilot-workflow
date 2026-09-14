@@ -26,6 +26,8 @@ Use the sanitized packets here and, privately in the user's authorized work envi
 
 Maintenance follows evidence: when a maintained built-in repeatedly provides the same high-value coverage with comparable or better precision, prefer it and simplify custom workflow code. Retain custom reasoning when comparisons show material workflow-specific value the generic reviewer misses. A plausible overlap or one successful fixture alone does not justify deleting a specialist.
 
+For a critique-reuse variant on a consequential case below, provide the parent an actual current-context rubber-duck response for its pinned comparison and question, without the rubric. Check that the parent verifies and reconciles it without another equivalent dispatch. Repeat after changing a material contract or affected consumer: assess whether a fresh challenge could change the conclusion, rather than counting passes or reusing a stale critique as current evidence. Keep critique output out of neutral specialist packets and external publication.
+
 ## A. Simple JSON/config change
 
 Packet:

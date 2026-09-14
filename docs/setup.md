@@ -56,6 +56,8 @@ Internal reviewer names use the `pr-review-` prefix and CLI `infer: false` to pr
 
 ## Verify skill selection
 
+For a normal request, Copilot may select a skill based on the prompt and its description. Explicit invocation is useful when you want a particular workflow, especially for consequential work; automatic selection is not guaranteed. Ordinary use does not require manual skill inspection. [Selection and invocation](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills#using-agent-skills)
+
 The personal task skills use `eng-` names, including `/eng-planning`, `/eng-implementation`, `/eng-implementation-review`, `/eng-pr-review`, `/eng-review-context`, `/eng-prepare-pr`, and `/eng-jira-story`. Use these names for explicit invocation. No generic aliases are installed. CLI project skills take priority over duplicate personal names; the namespace avoids collisions with generic repository workflows but does not defeat an exact same-name project definition. [CLI skill precedence](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference#skill-locations)
 
 For troubleshooting or consequential planning/review, start a fresh session or run `/skills reload`, then `/skills info eng-planning` or `/skills info eng-pr-review`. Check that the selected path is the expected personal `~/.copilot/skills/eng-.../SKILL.md`. `copilot skill list --json` also exposes source/path/enabled state. Installation alone does not prove loading, and `/instructions` separately inspects combined instruction files. Other clients require their own discovery controls; this is not a ritual for every prompt. [Skill inspection](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills)

@@ -99,10 +99,34 @@ class ContentTests(unittest.TestCase):
                     self.assertLessEqual(set(allowed), {"read", "search"})
                     rendered = files[".copilot/agents/" + agent.name].decode("utf-8")
                     self.assertNotIn("{{", rendered)
-                    for state in ("VERIFIED", "CONDITIONAL", "REJECTED"):
-                        self.assertIn(state, header[2])
-                    self.assertIn("counter-evidence", header[2])
-                    self.assertIn("no source or external mutation", header[2])
+
+    def test_review_specialists_preserve_shared_evidence_and_authority_contract(self):
+        # Check each responsibility independently; specialists may explain it
+        # differently. These guards do not establish model compliance.
+        contracts = {
+            "empty result": r"zero findings (?:is|are) valid",
+            "no quota": r"no finding quota",
+            "no invented obligations": r"do not invent [^.]*requirements[^.]*callers[^.]*consumers[^.]*compatibility",
+            "precedent is defeasible": r"precedent is evidence, not (?:unquestionable )?authority",
+            "evidence distinctions": r"distinguish [^.]*observation[^.]*evidenced obligation[^.]*inference[^.]*uncertainty",
+            "counter-check": r"seek counter-evidence",
+            "reject preferences": r"preference is not a finding",
+            "mutation boundary": r"no source or external mutation",
+            "technical output": r"return [^.]*technical candidate records",
+            "no polished comments": r"no [^.]*polished PR comments",
+            "parent acceptance": r"parent owns [^.]*acceptance",
+            "parent severity": r"parent (?:assigns|owns) [^.]*severity",
+        }
+        agents = sorted((SOURCE / "agents").glob("*.agent.md", case_sensitive=True))
+        self.assertTrue(agents)
+        for agent in agents:
+            body = agent.read_text(encoding="utf-8-sig").split("---\n", 2)[2]
+            for responsibility, pattern in contracts.items():
+                with self.subTest(agent=agent.name, responsibility=responsibility):
+                    self.assertRegex(body.lower(), pattern.lower())
+            for state in ("VERIFIED", "CONDITIONAL", "REJECTED"):
+                with self.subTest(agent=agent.name, recommendation=state):
+                    self.assertRegex(body, r"\b" + state + r"\b")
 
     def test_pr_review_retains_parent_owned_gate_and_optional_delegation(self):
         skill = (SOURCE / "skills/eng-pr-review/SKILL.md").read_text(encoding="utf-8")

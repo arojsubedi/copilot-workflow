@@ -12,6 +12,8 @@ Inspect actual delegation, supplied context, file reads, and final plan. A same-
 
 Repeat a substantial case with delegation unavailable and with a draft accidentally inherited/read: require honest lost-independence disclosure, a fresh neutral context when supported, and parent evidence challenges. A still-unresolved consequential assumption prevents readiness for dependent implementation. Repeat with rubber-duck unavailable; do not label parent reasoning complementary-model critique. Installation in a temporary home alone does not prove Copilot discovery or isolation; inspect the actual client's selected skill and context.
 
+For the critique-reuse variant, make an actual rubber-duck response available to the parent at the adversarial checkpoint, after independent discovery. Record the proposal and question it assessed. Keep the rubric out of that response. Check that the parent reconciles applicable evidence without another equivalent dispatch. Then materially change the proposal's ownership or contract: the earlier critique must not be treated as current validation. Another challenge should answer a question that can change the result. Neither variant permits leaking the critique into an unanchored discovery packet or persisting critique history.
+
 ## Existing interface owns the change
 
 - **Request:** expose the display unit for each metric variant.

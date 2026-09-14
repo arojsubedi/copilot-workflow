@@ -2,6 +2,8 @@
 
 The [eng-pr-review skill](../skills/eng-pr-review/SKILL.md) assesses an existing PR against a pinned repository, base and head. It establishes supported behavior, accounts for the material change surface, follows affected contracts and reconciles current discussion before recommending a review disposition. Contributor code and external systems remain unchanged. A focused review can finish in chat with zero custom subagents.
 
+Copilot may select this skill from the request and its description. Explicit `/eng-pr-review` invocation makes the workflow choice unambiguous; [source inspection](setup.md#verify-skill-selection) is optional. The sequence below describes the workflow once loaded.
+
 ```text
 Pin exact target
         |
@@ -75,6 +77,8 @@ The intended trust boundary is not hard instruction isolation. Copilot CLI combi
 Prefer maintained built-ins where their responsibility fits: `explore` for bounded evidence/consumer tracing with available code intelligence, `task` for inspected safe checks, optional `code-review` for a generic defect sweep, `rubber-duck` for consequential counter-evidence and `security-review` for credible security boundaries. Local-diff workers require an exact matching checkout. General-purpose has no routine role, and manual `/research` is not an automatic dependency. No roster must execute. [GitHub's built-in agents](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents)
 
 Custom [correctness](../agents/pr-review-correctness.agent.md) independently reconstructs domain contracts and behavioral counterexamples; [design/simplicity](../agents/pr-review-design-simplicity.agent.md) assesses machinery, ownership and evidenced alternatives; [test evidence](../agents/pr-review-test-evidence.agent.md) determines what tests establish and which consequential regression scenarios are missing. Generic code-review and custom correctness run together only for consequential complementary questions.
+
+An applicable rubber-duck critique already in context, including one initiated by Copilot, is reconciled before requesting another. An equivalent pass adds no automatic value; another challenge needs a materially different question/state, a stale critique after changes, or a plausible ability to change the conclusion. [Rubber-duck consultation](https://docs.github.com/en/copilot/concepts/agents/copilot-cli/rubber-duck#when-copilot-consults-the-rubber-duck-agent)
 
 Profiles remain namespaced, read/search-only and `infer: false`. Explicit dispatch depends on the client; if unavailable, the parent covers the question and discloses material lost independence. Each neutral packet contains pinned evidence, source distinctions, a bounded question and coverage scope, without the parent's verdict. Specialists return factual candidates, anchors, consequence, counter-evidence, evidence gaps and **VERIFIED / CONDITIONAL / REJECTED** recommendations. They do not recommend severity or produce polished comments.
 

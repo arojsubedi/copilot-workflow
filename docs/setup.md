@@ -31,7 +31,7 @@ Put GitHub and Jira connection names and the Jira site under `## Connections`. P
 
 PR preparation combines those names with applicable repository requirements, verifies eligibility when possible, excludes the author, removes duplicates, and shows the exact reviewer list before requesting approval.
 
-Profiles should contain only facts that are private, hard to derive, or genuinely project-specific. Good examples are connection identities, reviewers, a private PR-title convention, or a required acceptance-criteria convention. Leave repository commands, coding standards, generic templates, architecture, and live board fields to the repository and tools.
+Profiles should contain only facts that are private, hard to derive, or genuinely project-specific. Good examples are connection identities, reviewers, a private PR-title convention, a branch-naming convention, or a required acceptance-criteria convention. Leave repository commands, coding standards, generic templates, architecture, and live board fields to the repository and tools.
 
 Profiles remain local and are ignored by Git. They are configuration, not credential storage.
 

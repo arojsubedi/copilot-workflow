@@ -22,4 +22,6 @@ Copy this file to `my-project.md`. Replace placeholders and verify the facts bef
 
 ## Project-specific conventions
 
-Remove this section if unnecessary. Keep only private overrides, such as a PR-title convention, required acceptance-criteria style, or a verified non-obvious constraint. Omit repository commands, generic body templates, and live field/board IDs. Current repository/tool requirements and writing guidance supply the rest.
+Remove this section if unnecessary. Keep only private overrides, such as a PR-title convention, branch-naming convention, required acceptance-criteria style, or a verified non-obvious constraint. Omit repository commands, generic body templates, and live field/board IDs. Current repository/tool requirements and writing guidance supply the rest.
+
+- Branch naming convention: `user/{JIRA-KEY}`
